@@ -1,10 +1,10 @@
 """
-Anki Setup Wizard
+AnKiel Setup Tool
 =================
-A one-stop wizard for installing and configuring popular Anki add-ons,
-with a focus on German medical students (AnkiZin, AnkiHub, AMBOSS, …).
+A one-stop wizard for installing and configuring popular Anki add-ons like
+AnkiZin, AnkiHub, AMBOSS, ...
 
-Adds:  Tools → Anki Setup Wizard
+Adds:  Tools → AnKiel Setup Tool
 
 Requires Anki 2.1.49+ (Qt6/PyQt6).
 """
@@ -21,15 +21,15 @@ def _show_wizard() -> None:
     except Exception as exc:  # noqa: BLE001
         from aqt.utils import showWarning
         showWarning(
-            f"Anki Setup Wizard konnte nicht geöffnet werden:\n\n{exc}",
-            title="Anki Setup Wizard – Fehler",
+            f"AnKiel Setup Tool konnte nicht geöffnet werden:\n\n{exc}",
+            title="AnKiel Setup Tool – Fehler",
         )
         raise
 
 
 def _register_menu() -> None:
     """Called once the main window is fully initialised."""
-    action = QAction("Anki Setup Wizard", mw)
+    action = QAction("AnKiel Setup Tool", mw)
     action.triggered.connect(_show_wizard)
     mw.form.menuTools.addAction(action)
 

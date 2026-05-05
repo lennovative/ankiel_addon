@@ -23,19 +23,16 @@ Each entry in ADDON_CATALOG has:
 from __future__ import annotations
 
 ADDON_CATALOG: dict = {
-    # ------------------------------------------------------------------ #
-    #  German Medical                                                      #
-    # ------------------------------------------------------------------ #
     "ankizin": {
         "id": "ankizin",
-        "name": "AnkiZin",
+        "name": "Ankizin",
         "subtitle": "Medizinkarten für das deutsche Studium",
         "description": (
             "Umfassendes Kartenset auf Basis der AMBOSS-Bibliothek und des "
             "100-Tage-Lernplans. Enthält eigene Notiztypen und einen "
             "integrierten Lernplan-Manager."
         ),
-        "category": "german_medical",
+        "category": "basics",
         "icon": "🏥",
         "addon_codes": ["2058530482"],
         "requires_account": False,
@@ -43,20 +40,20 @@ ADDON_CATALOG: dict = {
         "setup_steps": [
             {
                 "type": "install",
-                "title": "AnkiZin Add-on installieren",
-                "description": "Das AnkiZin Add-on (Notiztypen + Lernplan-Manager) wird installiert.",
+                "title": "Ankizin Add-on installieren",
+                "description": "Das Ankizin Add-on (Notiztypen + Lernplan-Manager) wird installiert.",
                 "codes": ["2058530482"],
             },
             {
                 "type": "instruction",
-                "title": "AnkiZin Deck herunterladen",
+                "title": "Ankizin Deck herunterladen",
                 "description": (
-                    "1. Besuche die AnkiZin-Website (Button unten).\n"
+                    "1. Besuche die Ankizin-Website (Button unten).\n"
                     "2. Lade das aktuelle Deck herunter (.apkg-Datei).\n"
                     "3. Öffne die Datei → Anki importiert Deck + Notiztypen automatisch.\n"
                     "   (alternativ: Datei → Importieren, Strg+Shift+I)"
                 ),
-                "button_label": "AnkiZin Website öffnen",
+                "button_label": "Ankizin Website öffnen",
                 "button_url": "https://www.ankizin.de/wiki/ankizin-deck-installieren/",
             },
             {
@@ -83,9 +80,9 @@ ADDON_CATALOG: dict = {
         "description": (
             "AnkiHub hält deine Decks automatisch aktuell und ermöglicht "
             "gemeinschaftliche Karten-Verbesserungen. Wird für viele "
-            "Community-Decks (z. B. AnkiZin) benötigt."
+            "Community-Decks (z. B. Ankizin) benötigt."
         ),
-        "category": "german_medical",
+        "category": "collaboration",
         "icon": "🔄",
         "addon_codes": ["1322529746"],
         "requires_account": True,
@@ -133,7 +130,7 @@ ADDON_CATALOG: dict = {
             "Erklärungen aus der AMBOSS-Bibliothek. Erfordert einen "
             "AMBOSS-Account (kostenpflichtig oder Unizugang)."
         ),
-        "category": "german_medical",
+        "category": "basics",
         "icon": "📚",
         "addon_codes": ["1044112126"],
         "requires_account": True,
@@ -169,10 +166,10 @@ ADDON_CATALOG: dict = {
         "subtitle": "Eselsbrücken-Videos direkt in Anki",
         "description": (
             "Zeigt passende Meditricks-Gedächtnisstützen direkt in deinen "
-            "Anki-Karten an. Perfekt in Kombination mit dem AnkiZin-Deck. "
+            "Anki-Karten an. Perfekt in Kombination mit dem Ankizin-Deck. "
             "Erfordert einen Meditricks-Account."
         ),
-        "category": "german_medical",
+        "category": "others",
         "icon": "🧠",
         "addon_codes": ["1110557695"],
         "requires_account": True,
@@ -192,7 +189,7 @@ ADDON_CATALOG: dict = {
                     "1. Gehe zu Werkzeuge → Meditricks.\n"
                     "2. Logge dich mit deinen Meditricks-Zugangsdaten ein.\n"
                     "3. Die Eselsbrücken erscheinen automatisch in kompatiblen\n"
-                    "   AnkiZin-Karten während des Lernens."
+                    "   Ankizin-Karten während des Lernens."
                 ),
                 "button_label": "Meditricks Website",
                 "button_url": "https://www.meditricks.de/anki/",
@@ -200,9 +197,6 @@ ADDON_CATALOG: dict = {
         ],
     },
 
-    # ------------------------------------------------------------------ #
-    #  Collaboration                                                        #
-    # ------------------------------------------------------------------ #
     "ankicollab": {
         "id": "ankicollab",
         "name": "AnkiCollab",
@@ -265,9 +259,6 @@ ADDON_CATALOG: dict = {
         ],
     },
 
-    # ------------------------------------------------------------------ #
-    #  Utility                                                             #
-    # ------------------------------------------------------------------ #
     "image_occlusion": {
         "id": "image_occlusion",
         "name": "Image Occlusion Enhanced",
@@ -277,7 +268,7 @@ ADDON_CATALOG: dict = {
             "Unverzichtbar für Anatomie, Biochemie-Diagramme und alle "
             "visuellen Lerninhalte."
         ),
-        "category": "utility",
+        "category": "others",
         "icon": "🖼️",
         "addon_codes": ["1374772155"],
         "requires_account": False,
@@ -301,7 +292,7 @@ ADDON_CATALOG: dict = {
             "im Anki-Hauptfenster. Motivierend und hilfreich für die "
             "Lernplanung."
         ),
-        "category": "utility",
+        "category": "others",
         "icon": "📊",
         "addon_codes": ["1771074083"],
         "requires_account": False,
@@ -325,7 +316,7 @@ ADDON_CATALOG: dict = {
             "eigene Skripte) die Kommunikation mit Anki. Wird von vielen "
             "anderen Tools vorausgesetzt."
         ),
-        "category": "utility",
+        "category": "others",
         "icon": "🔌",
         "addon_codes": ["2055492159"],
         "requires_account": False,
@@ -353,37 +344,19 @@ ADDON_CATALOG: dict = {
 }
 
 CATEGORIES: dict = {
-    "german_medical": {
-        "label": "🏥  Medizinstudium (Deutsch)",
-        "description": "Add-ons speziell für das deutsche Medizinstudium",
-        "color": "#c0392b",
+    "basics": {
+        "label": "📚  Basics",
+        "description": "Ankizin und AMBOSS",
+        "color": "#8e44ad",
     },
     "collaboration": {
-        "label": "🤝  Kollaboration & Sync",
-        "description": "Gemeinsames Arbeiten an und Teilen von Decks",
+        "label": "🤝  Collaboration",
+        "description": "AnkiCollab und AnkiHub",
         "color": "#2980b9",
     },
-    "utility": {
-        "label": "⚡  Nützliche Tools",
-        "description": "Allgemeine Verbesserungen für Anki",
-        "color": "#27ae60",
-    },
-}
-
-PRESETS: dict = {
-    "german_medical": {
-        "label": "🏥  Medizinstudium (Deutsch)",
-        "tooltip": "AnkiZin, AnkiHub, AMBOSS, Meditricks, Image Occlusion, Review Heatmap",
-        "addons": ["ankizin", "ankihub", "amboss", "meditricks", "image_occlusion", "review_heatmap"],
-    },
-    "collab": {
-        "label": "🤝  Kollaboration",
-        "tooltip": "AnkiCollab + AnkiHub",
-        "addons": ["ankicollab", "ankihub"],
-    },
-    "essential": {
-        "label": "⚡  Basis-Tools",
-        "tooltip": "Image Occlusion Enhanced, Review Heatmap, AnkiConnect",
-        "addons": ["image_occlusion", "review_heatmap", "ankiconnect"],
+    "others": {
+        "label": "✨  Others",
+        "description": "Weitere Add-ons und Erweiterungen",
+        "color": "#f39c12",
     },
 }

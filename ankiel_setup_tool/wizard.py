@@ -1,5 +1,5 @@
 """
-Main wizard dialog for the Anki Setup Wizard add-on.
+Main wizard dialog for the AnKiel add-on.
 
 Pages (QStackedWidget indices):
   0  Select   – per-addon checkboxes
@@ -192,9 +192,9 @@ class AnkiSetupWizard(QDialog):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Anki Setup Wizard")
-        self.setMinimumSize(720, 560)
-        self.resize(760, 640)
+        self.setWindowTitle("AnKiel")
+        self.setMinimumSize(820, 720)
+        self.resize(860, 700)
 
         self._addons_folder: str = mw.addonManager.addonsFolder()
         self._selected_ids: List[str] = []
@@ -232,16 +232,16 @@ class AnkiSetupWizard(QDialog):
         hdr.setStyleSheet(
             "QFrame{background:qlineargradient("
             "x1:0,y1:0,x2:1,y2:0,stop:0 #1a252f,stop:1 #2980b9);"
-            "min-height:60px;max-height:60px;}"
+            "min-height:10px;max-height:200px;}"
         )
         hl = QHBoxLayout(hdr)
-        hl.setContentsMargins(22, 0, 22, 0)
-        title = QLabel("🎓  Anki Setup Wizard")
+        hl.setContentsMargins(0, 0, 0, 0)
+        title = QLabel("AnKiel Setup")
         title.setStyleSheet("color:white;font-size:19px;font-weight:bold;")
         sub = QLabel("Add-ons installieren und einrichten")
         sub.setStyleSheet("color:#85c1e9;font-size:11px;")
         col = QVBoxLayout()
-        col.setSpacing(2)
+        col.setSpacing(1)
         col.addWidget(title)
         col.addWidget(sub)
         hl.addLayout(col)
