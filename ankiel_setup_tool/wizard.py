@@ -31,6 +31,7 @@ from aqt.qt import (
     QScrollArea,
     QStackedWidget,
     QTextBrowser,
+    QTimer,
     QUrl,
     QVBoxLayout,
     QWidget,
@@ -371,7 +372,7 @@ class _AddonCard(QFrame):
 
 class AnkiSetupWizard(QDialog):
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, post_restart: bool = False) -> None:
         super().__init__(parent)
         self.setWindowTitle("AnKiel")
         self.setMinimumSize(820, 720)
@@ -425,15 +426,22 @@ class AnkiSetupWizard(QDialog):
         self._build_nav_bar(outer)
         self._go_to(PAGE_UNI)
         self._apply_saved_state()
+        if post_restart and self._selected_town_id:
+            self._back_to_overview()
 
     # -----------------------------------------------------------------------
     # Saved state
     # -----------------------------------------------------------------------
 
     def _apply_saved_state(self) -> None:
+        from .config_loader import load_town
         saved = load_state().get("selected_town")
         if saved:
             self._on_town_selected(saved)
+            try:
+                self._town_config = load_town(saved)
+            except Exception:
+                pass
 
     # -----------------------------------------------------------------------
     # Header
@@ -811,7 +819,7 @@ class AnkiSetupWizard(QDialog):
         icon_lbl.setAlignment(_ALIGN_CENTER)
         vl.addWidget(icon_lbl)
 
-        vl.addWidget(QLabel("<h2>Einrichtung abgeschlossen!</h2>"))
+        vl.addWidget(QLabel("<h2>Installation abgeschlossen!</h2>"))
 
         self._done_summary_lbl = QLabel()
         self._done_summary_lbl.setWordWrap(True)
@@ -819,16 +827,20 @@ class AnkiSetupWizard(QDialog):
         self._done_summary_lbl.setStyleSheet("font-size:13px;color:#555;")
         vl.addWidget(self._done_summary_lbl)
 
-        restart_lbl = QLabel(
-            "⚠️  <b>Starte Anki neu</b>, damit alle installierten Add-ons aktiv werden."
+        restart_note = QLabel("Neu installierte Add-ons sind erst nach einem Neustart aktiv.")
+        restart_note.setWordWrap(True)
+        restart_note.setAlignment(_ALIGN_CENTER)
+        restart_note.setStyleSheet("color:#856404;font-size:11px;")
+        vl.addWidget(restart_note)
+
+        restart_btn = QPushButton("Anki neu starten")
+        restart_btn.setStyleSheet(
+            "QPushButton{background:#e67e22;color:white;padding:10px 28px;"
+            "border-radius:6px;font-size:13px;font-weight:bold;}"
+            "QPushButton:hover{background:#d35400;}"
         )
-        restart_lbl.setWordWrap(True)
-        restart_lbl.setAlignment(_ALIGN_CENTER)
-        restart_lbl.setStyleSheet(
-            "background:#fef9e7;color:#856404;padding:12px;"
-            "border-radius:6px;font-size:12px;"
-        )
-        vl.addWidget(restart_lbl)
+        restart_btn.clicked.connect(self._restart_anki)
+        vl.addWidget(restart_btn, alignment=_ALIGN_CENTER)
         vl.addStretch()
         return page
 
@@ -1158,27 +1170,33 @@ class AnkiSetupWizard(QDialog):
     # -----------------------------------------------------------------------
 
     def _go_to_steps_then_overview(self) -> None:
-        """Show setup steps for freshly installed addons, then go to overview.
-        Skips straight to overview if nothing was freshly downloaded."""
+        """After install: show login steps for unlogged addons, then done or overview."""
         self._is_standalone_nav = False
         self._setup_mode = "install"
 
-        if not self._newly_installed_ids:
-            self._back_to_overview()
-            return
-
         self._step_queue = []
-        for aid in self._newly_installed_ids:
+        added_login: set = set()
+        for aid in self._selected_ids:
+            if aid in added_login or aid in self._newly_installed_ids:
+                continue
             addon = ADDON_CATALOG.get(aid, {})
             for step in addon.get("setup_steps", []):
-                if step.get("type") in ("instruction", "login"):
-                    self._step_queue.append((aid, step))
+                if step.get("type") != "login":
+                    continue
+                if self._check_is_logged_in(
+                    step.get("auth_module", ""), step.get("is_logged_in_attr", "")
+                ):
+                    continue
+                self._step_queue.append((aid, {**step, "skip_if_logged_in": False}))
+                added_login.add(aid)
 
         self._step_idx = -1
         if self._step_queue:
             self._advance_step()
-        else:
+        elif self._newly_installed_ids:
             self._show_done()
+        else:
+            self._back_to_overview()
 
     def _run_setup_for_addon(self, addon_id: str) -> None:
         """Run the instruction steps for one addon (manual re-run from Setup button)."""
@@ -1209,7 +1227,7 @@ class AnkiSetupWizard(QDialog):
     def _advance_step(self) -> None:
         self._step_idx += 1
         if self._step_idx >= len(self._step_queue):
-            if self._setup_mode == "manual":
+            if self._setup_mode == "manual" or not self._newly_installed_ids:
                 self._back_to_overview()
             else:
                 self._show_done()
@@ -1224,10 +1242,10 @@ class AnkiSetupWizard(QDialog):
         )
 
         self._steps_addon_lbl.setText(f"{addon.get('icon', '')}  {addon['name']}")
-        self._steps_progress_lbl.setText(
-            f"Schritt {pos_in_addon} / {len(addon_steps)}"
-            f"  •  Gesamt {self._step_idx + 1} / {len(self._step_queue)}"
-        )
+        progress = f"Schritt {pos_in_addon} / {len(addon_steps)}"
+        if len(addon_steps) != len(self._step_queue):
+            progress += f"  •  Gesamt {self._step_idx + 1} / {len(self._step_queue)}"
+        self._steps_progress_lbl.setText(progress)
         self._steps_title_lbl.setText(step["title"])
         self._steps_desc.setPlainText(step.get("description", ""))
 
@@ -1293,6 +1311,21 @@ class AnkiSetupWizard(QDialog):
     # -----------------------------------------------------------------------
     # Completion
     # -----------------------------------------------------------------------
+
+    def _restart_anki(self) -> None:
+        import subprocess
+        import sys
+        flag = os.path.join(os.path.dirname(__file__), ".reopen_wizard")
+        try:
+            open(flag, "w").close()  # noqa: WPS515
+        except OSError:
+            pass
+        self.accept()
+        try:
+            subprocess.Popen(sys.argv)
+        except Exception:
+            pass
+        QTimer.singleShot(300, mw.app.quit)
 
     def _show_done(self) -> None:
         installed = [
