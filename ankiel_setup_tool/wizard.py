@@ -26,6 +26,7 @@ from aqt.qt import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -117,6 +118,7 @@ _STEPS_STYLE = (
 
 
 
+
 # ===========================================================================
 # Town card widget
 # ===========================================================================
@@ -141,7 +143,7 @@ class _TownCard(QFrame):
         row.setSpacing(12)
 
         icon_lbl = QLabel(town_data.get("icon", "🎓"))
-        icon_lbl.setStyleSheet("font-size:28px;min-width:36px;max-width:36px;")
+        icon_lbl.setStyleSheet("font-size:24px;min-width:32px;max-width:32px;")
         row.addWidget(icon_lbl)
 
         txt = QVBoxLayout()
@@ -154,6 +156,14 @@ class _TownCard(QFrame):
         txt.addWidget(name_lbl)
         txt.addWidget(desc_lbl)
         row.addLayout(txt, stretch=1)
+
+        self._check_lbl = QLabel("✓")
+        self._check_lbl.setStyleSheet(
+            "color:#2980b9;font-size:16px;font-weight:bold;min-width:20px;"
+        )
+        self._check_lbl.setAlignment(_ALIGN_RIGHT)
+        self._check_lbl.hide()
+        row.addWidget(self._check_lbl)
 
     def _apply_style(self) -> None:
         if self._selected:
@@ -175,9 +185,20 @@ class _TownCard(QFrame):
     def set_selected(self, v: bool) -> None:
         self._selected = v
         self._apply_style()
+        if v:
+            self._check_lbl.show()
+        else:
+            self._check_lbl.hide()
 
     def town_id(self) -> str:
         return self._town_data["id"]
+
+    def matches(self, query: str) -> bool:
+        q = query.lower()
+        return (
+            q in self._town_data.get("name", "").lower()
+            or q in self._town_data.get("description", "").lower()
+        )
 
 
 # ===========================================================================
@@ -384,6 +405,7 @@ class AnkiSetupWizard(QDialog):
         self._selected_town_id: Optional[str] = None
         self._town_config: dict = {}
         self._town_cards: List[_TownCard] = []
+        self._town_search: Optional[QLineEdit] = None
 
         # Install state
         self._install_phase: str = ""
@@ -438,6 +460,11 @@ class AnkiSetupWizard(QDialog):
         saved = load_state().get("selected_town")
         if saved:
             self._on_town_selected(saved)
+            if self._town_search is not None:
+                for card in self._town_cards:
+                    if card.town_id() == saved:
+                        self._town_search.setText(card._town_data.get("name", ""))
+                        break
             try:
                 self._town_config = load_town(saved)
             except Exception:
@@ -485,30 +512,46 @@ class AnkiSetupWizard(QDialog):
         )
         vl.addWidget(top)
 
-        hint = QLabel(
-            "Add-ons für deinen Standort werden automatisch installiert."
-        )
-        hint.setStyleSheet("color:#7f8c8d;font-size:11px;padding-bottom:4px;")
+        hint = QLabel("Add-ons für deinen Standort werden automatisch installiert.")
+        hint.setStyleSheet("color:#7f8c8d;font-size:11px;padding-bottom:2px;")
         vl.addWidget(hint)
+
+        search = QLineEdit()
+        search.setPlaceholderText("🔍  Suchen…")
+        search.setStyleSheet(
+            "QLineEdit{padding:6px 10px;font-size:13px;"
+            "border:2px solid #dee2e6;border-radius:6px;background:#fff;}"
+            "QLineEdit:focus{border-color:#2980b9;}"
+        )
+        search.setMinimumHeight(36)
+        search.setClearButtonEnabled(True)
+        vl.addWidget(search)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(_FRAME_NONE)
 
         inner = QWidget()
-        il = QVBoxLayout(inner)
-        il.setContentsMargins(2, 2, 2, 2)
-        il.setSpacing(6)
+        self._town_list_layout = QVBoxLayout(inner)
+        self._town_list_layout.setContentsMargins(2, 2, 2, 2)
+        self._town_list_layout.setSpacing(6)
 
         for town in list_towns():
             card = _TownCard(town, on_select=self._on_town_selected)
-            il.addWidget(card)
+            self._town_list_layout.addWidget(card)
             self._town_cards.append(card)
 
-        il.addStretch()
+        self._town_list_layout.addStretch()
         scroll.setWidget(inner)
         vl.addWidget(scroll, stretch=1)
+
+        search.textChanged.connect(self._filter_towns)
+        self._town_search = search
         return page
+
+    def _filter_towns(self, query: str) -> None:
+        for card in self._town_cards:
+            card.setVisible(not query or card.matches(query))
 
     def _on_town_selected(self, town_id: str) -> None:
         self._selected_town_id = town_id
