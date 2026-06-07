@@ -161,7 +161,7 @@
           "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
           "skip_if_logged_in": true,
           "button_label": "AnkiCollab.com öffnen",
-          "button_url": "https://www.ankicollab.com/Login",
+          "button_url": "https://ankicollab.com/signup",
           "login_module": "1957538407.dialogs",
           "login_dialog_class": "LoginDialog",
           "auth_module": "1957538407.auth_manager",
@@ -172,7 +172,7 @@
           "title": "Deck abonnieren",
           "description": "1. Besuche ankicollab.com/Decks (Button unten).\n2. Suche nach dem gewünschten Deck.\n3. Klicke auf den Deck-Namen und kopiere den\n   Subscription Key (blauer Text oben).\n4. In Anki: AnkiCollab → Edit Subscriptions\n   → Key einfügen → 'Add Subscription'.\n\nTipp: Aktiviere 'Update Decks on startup' für\nautomatische Updates.",
           "button_label": "Decks durchsuchen",
-          "button_url": "https://www.ankicollab.com/Decks"
+          "button_url": "https://www.ankicollab.com/decks"
         }
       ]
     },
