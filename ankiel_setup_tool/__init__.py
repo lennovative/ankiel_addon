@@ -4,7 +4,7 @@ AnKiel Setup Tool
 A one-stop wizard for installing and configuring popular Anki add-ons like
 AnkiZin, AnkiHub, AMBOSS, ...
 
-Adds:  Tools → AnKiel Setup Tool
+Adds:  toolbar button + Tools → AnKiel Setup Tool
 
 Requires Anki 2.1.49+ (Qt6/PyQt6).
 """
@@ -31,6 +31,18 @@ def _show_wizard(post_restart: bool = False) -> None:
         raise
 
 
+def _on_toolbar_init(links: list, toolbar) -> None:
+    links.append(
+        toolbar.create_link(
+            cmd="ankiel_setup",
+            label="AnKiel",
+            func=lambda: _show_wizard(),
+            tip="AnKiel Setup Tool öffnen",
+            id="ankiel-setup-btn",
+        )
+    )
+
+
 def _register_menu() -> None:
     """Called once the main window is fully initialised."""
     action = QAction("AnKiel Setup Tool", mw)
@@ -45,6 +57,5 @@ def _register_menu() -> None:
         _show_wizard(post_restart=True)
 
 
-# gui_hooks.main_window_did_init fires after the deck list is shown,
-# which guarantees mw.form.menuTools exists.
 gui_hooks.main_window_did_init.append(_register_menu)
+gui_hooks.top_toolbar_did_init_links.append(_on_toolbar_init)
