@@ -156,17 +156,12 @@
           "codes": ["1957538407"]
         },
         {
-          "type": "instruction",
-          "title": "AnkiCollab Account erstellen",
-          "description": "1. Besuche ankicollab.com/Login (Button unten).\n2. Klicke auf 'Sign Up Here' und erstelle einen\n   kostenlosen Account.\n3. Bestätige deine E-Mail-Adresse.",
-          "button_label": "AnkiCollab.com öffnen",
-          "button_url": "https://www.ankicollab.com/Login"
-        },
-        {
           "type": "login",
-          "title": "In AnkiCollab einloggen",
-          "description": "Klicke auf 'Login-Fenster öffnen' und melde dich mit deinen AnkiCollab-Zugangsdaten an.\n\nFalls das Add-on noch nicht geladen ist (direkt nach der Installation), starte Anki einmal neu und öffne den Setup erneut.",
+          "title": "Account erstellen & einloggen",
+          "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
           "skip_if_logged_in": true,
+          "button_label": "AnkiCollab.com öffnen",
+          "button_url": "https://www.ankicollab.com/Login",
           "login_module": "1957538407.dialogs",
           "login_dialog_class": "LoginDialog",
           "auth_module": "1957538407.auth_manager",

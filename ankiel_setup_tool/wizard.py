@@ -200,6 +200,7 @@ class _AddonCard(QFrame):
         on_check_changed=None,
         on_setup=None,
         on_uninstall=None,
+        on_update=None,
         login_type: Optional[str] = None,
         on_login=None,
         parent: QWidget = None,
@@ -310,23 +311,29 @@ class _AddonCard(QFrame):
         desc_lbl.setStyleSheet("color:#555;font-size:11px;margin-top:2px;")
         txt.addWidget(subtitle_lbl)
         txt.addWidget(desc_lbl)
+        txt.addStretch()
         row.addLayout(txt, stretch=1)
 
-        # Right column: buttons only
-        if on_setup or on_uninstall or on_login:
+        # Right column: buttons
+        if on_setup or on_uninstall or on_update or on_login:
             btns = QVBoxLayout()
             btns.setSpacing(4)
             btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
+            if on_setup:
+                setup_btn = QPushButton("Anleitung")
+                setup_btn.setStyleSheet(_BTN_SETUP)
+                setup_btn.clicked.connect(on_setup)
+                btns.addWidget(setup_btn)
             if on_login:
                 login_btn = QPushButton("Anmelden")
                 login_btn.setStyleSheet(_BTN_SETUP)
                 login_btn.clicked.connect(on_login)
                 btns.addWidget(login_btn)
-            if on_setup:
-                setup_btn = QPushButton("Setup →")
-                setup_btn.setStyleSheet(_BTN_SETUP)
-                setup_btn.clicked.connect(on_setup)
-                btns.addWidget(setup_btn)
+            if on_update:
+                update_btn = QPushButton("Updates prüfen")
+                update_btn.setStyleSheet(_BTN_SETUP)
+                update_btn.clicked.connect(on_update)
+                btns.addWidget(update_btn)
             if on_uninstall:
                 uninstall_btn = QPushButton("Deinstallieren")
                 uninstall_btn.setStyleSheet(_BTN_UNINSTALL)
@@ -393,6 +400,7 @@ class AnkiSetupWizard(QDialog):
         self._step_idx: int = -1
         self._current_step_url: Optional[str] = None
         self._setup_mode: str = "install"  # "install" | "manual"
+        self._is_standalone_nav: bool = False  # True when login/update opened directly
 
         # Update-check state
         self._update_addon_id: str = ""
@@ -584,6 +592,7 @@ class AnkiSetupWizard(QDialog):
                     addon_data, self._addons_folder,
                     read_only=True,
                     on_setup=self._make_setup_callback(aid, addon_data),
+                    on_update=self._make_update_callback(aid),
                     login_type=login_type,
                     on_login=on_login,
                 )
@@ -623,6 +632,7 @@ class AnkiSetupWizard(QDialog):
                         read_only=already,
                         on_check_changed=self._update_install_btn,
                         on_setup=self._make_setup_callback(aid, addon_data) if already else None,
+                        on_update=self._make_update_callback(aid) if already else None,
                         on_uninstall=on_uninstall,
                         login_type=login_type,
                         on_login=on_login,
@@ -633,13 +643,18 @@ class AnkiSetupWizard(QDialog):
         layout.addStretch()
 
     def _make_setup_callback(self, addon_id: str, addon_data: dict):
-        """Return a callback that opens the update+setup page, or None if no steps exist."""
+        """Return a callback for the Anleitung button, or None if no steps exist."""
         has_steps = any(
             s.get("type") in ("instruction", "login")
             for s in addon_data.get("setup_steps", [])
         )
         if not has_steps:
             return None
+        def _cb(_checked=False, _aid=addon_id):
+            self._run_setup_for_addon(_aid)
+        return _cb
+
+    def _make_update_callback(self, addon_id: str):
         def _cb(_checked=False, _aid=addon_id):
             self._open_update_page(_aid)
         return _cb
@@ -682,8 +697,8 @@ class AnkiSetupWizard(QDialog):
             )
             if logged_in:
                 return "logged_in", None
-            def _cb_native(_checked=False, _data=addon_data):
-                self._open_native_login_for_card(_data)
+            def _cb_native(_checked=False, _aid=_addon_id):
+                self._open_login_page(_aid)
             return "native", _cb_native
         elif login_type == "browser":
             url = login.get("url", "")
@@ -700,7 +715,7 @@ class AnkiSetupWizard(QDialog):
         if not mod:
             tooltip(
                 "Das Add-on ist noch nicht geladen. "
-                "Starte Anki neu und öffne den Setup erneut."
+                "Starte Anki neu."
             )
             return
         dlg_class = getattr(mod, login.get("login_dialog_class", ""), None)
@@ -708,6 +723,24 @@ class AnkiSetupWizard(QDialog):
             return
         dlg_class(mw).exec()
         self._back_to_overview()
+
+    def _open_login_page(self, addon_id: str) -> None:
+        """Show the login step as a wizard page (same layout as setup steps)."""
+        addon = ADDON_CATALOG.get(addon_id, {})
+        login_step = next(
+            (s for s in addon.get("setup_steps", []) if s.get("type") == "login"),
+            None,
+        )
+        if not login_step:
+            # Fallback: open native dialog directly
+            self._open_native_login_for_card(addon)
+            return
+        # Show without auto-skip so the user always sees the login page
+        self._is_standalone_nav = True
+        self._setup_mode = "manual"
+        self._step_queue = [(addon_id, {**login_step, "skip_if_logged_in": False})]
+        self._step_idx = -1
+        self._advance_step()
 
     def _uninstall_addon(self, addon_id: str) -> None:
         import shutil
@@ -848,12 +881,6 @@ class AnkiSetupWizard(QDialog):
         hl.addWidget(self._btn_back)
         hl.addStretch()
 
-        self._btn_skip = QPushButton("Überspringen")
-        self._btn_skip.setStyleSheet(_BTN_SECONDARY)
-        self._btn_skip.clicked.connect(self._advance_step)
-        self._btn_skip.hide()
-        hl.addWidget(self._btn_skip)
-
         self._btn_next = QPushButton("Weiter →")
         self._btn_next.setStyleSheet(_BTN_PRIMARY)
         self._btn_next.clicked.connect(self._on_next)
@@ -868,16 +895,17 @@ class AnkiSetupWizard(QDialog):
     def _update_nav(self) -> None:
         page = self._stack.currentIndex()
 
-        self._btn_back.setVisible(page in (PAGE_SELECT, PAGE_UPDATE))
-        self._btn_back.setEnabled(page in (PAGE_SELECT, PAGE_UPDATE))
-
-        self._btn_skip.setVisible(page == PAGE_STEPS)
+        standalone = self._is_standalone_nav and page in (PAGE_STEPS, PAGE_UPDATE)
+        self._btn_back.setVisible(not standalone and page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
+        self._btn_back.setEnabled(not standalone and page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
 
         if page == PAGE_DONE:
             self._btn_next.setText("Zur Übersicht")
             self._btn_next.setEnabled(True)
         elif page == PAGE_STEPS:
-            self._btn_next.setText("Nächster Schritt →")
+            is_last = self._step_idx >= len(self._step_queue) - 1
+            show_overview = standalone or (is_last and self._setup_mode == "manual")
+            self._btn_next.setText("Zur Übersicht" if show_overview else "Nächster Schritt →")
             self._btn_next.setEnabled(True)
         elif page == PAGE_INSTALL:
             self._btn_next.setText("Installiere…")
@@ -886,7 +914,7 @@ class AnkiSetupWizard(QDialog):
             self._btn_next.setText("Installieren →")
             self._btn_next.setEnabled(False)
         elif page == PAGE_UPDATE:
-            self._btn_next.setText("Setup →")
+            self._btn_next.setText("Zur Übersicht")
             self._btn_next.setEnabled(True)
         else:  # PAGE_UNI
             self._btn_next.setText("Weiter →")
@@ -898,8 +926,14 @@ class AnkiSetupWizard(QDialog):
 
     def _on_back(self) -> None:
         page = self._stack.currentIndex()
-        if page == PAGE_UPDATE:
-            self._go_to(PAGE_SELECT)
+        if page == PAGE_STEPS:
+            if self._step_idx > 0:
+                self._step_idx -= 2  # _advance_step will +1, landing on step_idx-1
+                self._advance_step()
+            else:
+                self._back_to_overview()
+        elif page == PAGE_UPDATE:
+            self._back_to_overview()
         else:
             self._go_to(PAGE_UNI)
 
@@ -924,9 +958,12 @@ class AnkiSetupWizard(QDialog):
             self._all_installed_ids.extend(ids)
             self._run_install()
         elif page == PAGE_UPDATE:
-            self._run_setup_for_addon(self._update_addon_id)
+            self._back_to_overview()
         elif page == PAGE_STEPS:
-            self._advance_step()
+            if self._is_standalone_nav:
+                self._back_to_overview()
+            else:
+                self._advance_step()
 
     # -----------------------------------------------------------------------
     # Update-check page
@@ -957,6 +994,7 @@ class AnkiSetupWizard(QDialog):
         self._update_version_lbl.setText(version_text)
         self._update_log.clear()
         self._update_check_btn.setEnabled(True)
+        self._is_standalone_nav = True
         self._go_to(PAGE_UPDATE)
 
     def _check_for_updates(self) -> None:
@@ -1122,6 +1160,7 @@ class AnkiSetupWizard(QDialog):
     def _go_to_steps_then_overview(self) -> None:
         """Show setup steps for freshly installed addons, then go to overview.
         Skips straight to overview if nothing was freshly downloaded."""
+        self._is_standalone_nav = False
         self._setup_mode = "install"
 
         if not self._newly_installed_ids:
@@ -1143,6 +1182,7 @@ class AnkiSetupWizard(QDialog):
 
     def _run_setup_for_addon(self, addon_id: str) -> None:
         """Run the instruction steps for one addon (manual re-run from Setup button)."""
+        self._is_standalone_nav = False
         addon = ADDON_CATALOG.get(addon_id, {})
         steps = [
             step for step in addon.get("setup_steps", [])
@@ -1156,6 +1196,7 @@ class AnkiSetupWizard(QDialog):
         self._advance_step()
 
     def _back_to_overview(self) -> None:
+        self._is_standalone_nav = False
         basic_ids = self._town_config.get("basic_addons", [])
         optional_ids = self._town_config.get("optional_addons", [])
         self._populate_addon_overview(basic_ids, optional_ids)
@@ -1197,7 +1238,14 @@ class AnkiSetupWizard(QDialog):
             ):
                 self._advance_step()
                 return
-            self._steps_url_btn.hide()
+            # Optional website link (e.g. account registration)
+            url = step.get("button_url")
+            self._current_step_url = url
+            if url:
+                self._steps_url_btn.setText(step.get("button_label", "Link öffnen"))
+                self._steps_url_btn.show()
+            else:
+                self._steps_url_btn.hide()
             self._steps_login_btn.show()
             self._steps_login_status.hide()
         else:
@@ -1223,7 +1271,7 @@ class AnkiSetupWizard(QDialog):
         mod = sys.modules.get(step.get("login_module", ""))
         if not mod:
             self._steps_login_status.setText(
-                "⚠️  Add-on noch nicht geladen – starte Anki neu und öffne den Setup erneut."
+                "⚠️  Add-on noch nicht geladen – starte Anki neu."
             )
             self._steps_login_status.setStyleSheet("color:#e67e22;font-size:12px;padding:2px 0;")
             self._steps_login_status.show()
