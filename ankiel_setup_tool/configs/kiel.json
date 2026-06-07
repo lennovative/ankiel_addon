@@ -1,0 +1,8 @@
+{
+  "id": "kiel",
+  "name": "Kiel – UKSH / CAU",
+  "description": "Universitätsklinikum Schleswig-Holstein & Christian-Albrechts-Universität zu Kiel",
+  "icon": "🏥",
+  "basic_addons": ["ankizin", "amboss"],
+  "optional_addons": ["ankihub", "ankicollab", "image_occlusion", "review_heatmap", "ankiconnect", "meditricks"]
+}

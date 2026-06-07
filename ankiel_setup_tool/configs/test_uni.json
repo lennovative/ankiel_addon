@@ -1,0 +1,8 @@
+{
+  "id": "test_uni",
+  "name": "Beispiel Uni",
+  "description": "Testprofil",
+  "icon": "🧪",
+  "basic_addons": ["review_heatmap"],
+  "optional_addons": ["ankiconnect", "image_occlusion"]
+}
