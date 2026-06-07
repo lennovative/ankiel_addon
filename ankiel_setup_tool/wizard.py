@@ -1174,13 +1174,12 @@ class AnkiSetupWizard(QDialog):
                 self._install_results[addon_id] = True
 
         total = len(codes_to_download)
-        self._install_progress.setMaximum(max(total, 1))
-        self._install_progress.setValue(0)
-        self._install_status_lbl.setText(
-            f"<b>Lade {total} Paket(e) herunter…</b>" if total else "<b>Nichts zu installieren.</b>"
-        )
-
-        if codes_to_download:
+        if total:
+            # Indeterminate (pulsing) bar — download_addons gives no per-addon
+            # callback so we can't track real progress.
+            self._install_progress.setMinimum(0)
+            self._install_progress.setMaximum(0)
+            self._install_status_lbl.setText(f"<b>Lade {total} Paket(e) herunter…</b>")
             download_addons(
                 parent=self,
                 mgr=mw.addonManager,
@@ -1188,10 +1187,14 @@ class AnkiSetupWizard(QDialog):
                 on_done=self._on_downloads_done,
             )
         else:
+            self._install_progress.setMaximum(1)
+            self._install_progress.setValue(1)
+            self._install_status_lbl.setText("<b>Nichts zu installieren.</b>")
             self._finish_install()
 
     def _on_downloads_done(self, log: list) -> None:
-        done = 0
+        self._install_progress.setMaximum(1)
+        self._install_progress.setValue(1)
         for entry_id, result in log:
             addon_id = self._code_to_addon.get(entry_id)
             addon = ADDON_CATALOG.get(addon_id or "", {})
@@ -1212,8 +1215,6 @@ class AnkiSetupWizard(QDialog):
                 self._install_log.append(f"   ❌  {icon} {name}  –  Fehler: {errmsg}")
                 if addon_id:
                     self._install_results[addon_id] = False
-            done += 1
-            self._install_progress.setValue(done)
 
         ok = sum(1 for v in self._install_results.values() if v)
         fail = len(self._install_results) - ok
