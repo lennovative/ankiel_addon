@@ -97,7 +97,7 @@
         {
           "type": "login",
           "title": "Bei AMBOSS anmelden",
-          "description": "Melde dich mit deinen AMBOSS-Zugangsdaten an.\n\nNoch kein Konto? Registriere dich auf der AMBOSS-Website (Button unten).\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
+          "description": "Melde dich mit deinen AMBOSS-Zugangsdaten an.\n\nNoch kein Konto? Registriere dich auf der AMBOSS-Website (Button unten).",
           "skip_if_logged_in": true,
           "button_label": "AMBOSS Website",
           "button_url": "https://www.amboss.com",
@@ -169,7 +169,7 @@
         {
           "type": "login",
           "title": "Account erstellen & einloggen",
-          "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
+          "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.",
           "skip_if_logged_in": true,
           "button_label": "ankicollab.com/signup Website",
           "button_url": "https://ankicollab.com/signup",

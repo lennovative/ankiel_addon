@@ -347,16 +347,16 @@ class _AddonCard(QFrame):
             btns = QVBoxLayout()
             btns.setSpacing(4)
             btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
-            if on_setup:
-                setup_btn = QPushButton("Anleitung")
-                setup_btn.setStyleSheet(_BTN_SETUP)
-                setup_btn.clicked.connect(on_setup)
-                btns.addWidget(setup_btn)
             if on_login:
                 login_btn = QPushButton("Anmelden")
                 login_btn.setStyleSheet(_BTN_LOGIN)
                 login_btn.clicked.connect(on_login)
                 btns.addWidget(login_btn)
+            if on_setup:
+                setup_btn = QPushButton("Anleitung")
+                setup_btn.setStyleSheet(_BTN_SETUP)
+                setup_btn.clicked.connect(on_setup)
+                btns.addWidget(setup_btn)
             if on_update:
                 update_btn = QPushButton("Updates prüfen")
                 update_btn.setStyleSheet(_BTN_SETUP)
@@ -458,7 +458,7 @@ class AnkiSetupWizard(QDialog):
         self._go_to(PAGE_UNI)
         self._apply_saved_state()
         if post_restart and self._selected_town_id:
-            self._back_to_overview()
+            self._start_post_restart_flow()
 
     # -----------------------------------------------------------------------
     # Saved state
@@ -1230,6 +1230,32 @@ class AnkiSetupWizard(QDialog):
     # -----------------------------------------------------------------------
     # Step routing
     # -----------------------------------------------------------------------
+
+    def _start_post_restart_flow(self) -> None:
+        """After restart: skip uni selection, show pending logins for basic addons, then overview."""
+        self._is_standalone_nav = False
+        self._setup_mode = "install"
+        basic_ids = self._town_config.get("basic_addons", [])
+        self._step_queue = []
+        added_login: set = set()
+        for aid in basic_ids:
+            if aid in added_login:
+                continue
+            addon = ADDON_CATALOG.get(aid, {})
+            for step in addon.get("setup_steps", []):
+                if step.get("type") != "login":
+                    continue
+                if self._check_is_logged_in(
+                    step.get("auth_module", ""), step.get("is_logged_in_attr", "")
+                ):
+                    continue
+                self._step_queue.append((aid, {**step, "skip_if_logged_in": False}))
+                added_login.add(aid)
+        self._step_idx = -1
+        if self._step_queue:
+            self._advance_step()
+        else:
+            self._back_to_overview()
 
     def _go_to_steps_then_overview(self) -> None:
         """After install: show login steps for unlogged addons, then done or overview."""
