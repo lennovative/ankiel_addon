@@ -79,8 +79,13 @@
       "requires_account": true,
       "external_url": "https://www.amboss.com",
       "login": {
-        "type": "external",
-        "note": "Login über Werkzeuge → AMBOSS → Einstellungen in Anki."
+        "type": "native",
+        "login_module": "1044112126.addon",
+        "login_dialog_class": "auth_dialog",
+        "login_method": "show_login",
+        "auth_module": "1044112126.addon",
+        "is_logged_in_attr": "user_service.is_logged_in",
+        "note": "Login über das AMBOSS-Fenster, das sich beim Klick auf 'Anmelden' öffnet."
       },
       "setup_steps": [
         {
@@ -90,11 +95,17 @@
           "codes": ["1044112126"]
         },
         {
-          "type": "instruction",
-          "title": "AMBOSS-Account verknüpfen",
-          "description": "Nach dem Neustart:\n\n1. Klicke auf das AMBOSS-Icon in der Werkzeuge-Leiste\n   (oder Werkzeuge → AMBOSS → Einstellungen).\n2. Logge dich mit deinen AMBOSS-Zugangsdaten ein.\n3. Das Add-on verbindet sich automatisch.\n\nBeim Lernen: Hover über hervorgehobene Begriffe\nfür sofortige AMBOSS-Pop-ups.",
+          "type": "login",
+          "title": "Bei AMBOSS anmelden",
+          "description": "Melde dich mit deinen AMBOSS-Zugangsdaten an.\n\nNoch kein Konto? Registriere dich auf der AMBOSS-Website (Button unten).\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
+          "skip_if_logged_in": true,
           "button_label": "AMBOSS Website",
-          "button_url": "https://www.amboss.com"
+          "button_url": "https://www.amboss.com",
+          "login_module": "1044112126.addon",
+          "login_dialog_class": "auth_dialog",
+          "login_method": "show_login",
+          "auth_module": "1044112126.addon",
+          "is_logged_in_attr": "user_service.is_logged_in"
         }
       ]
     },
@@ -160,7 +171,7 @@
           "title": "Account erstellen & einloggen",
           "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.\n\nHinweis: Falls der Button grau ist, starte Anki einmal neu (Add-on muss geladen sein).",
           "skip_if_logged_in": true,
-          "button_label": "AnkiCollab.com öffnen",
+          "button_label": "ankicollab.com/signup Website",
           "button_url": "https://ankicollab.com/signup",
           "login_module": "1957538407.dialogs",
           "login_dialog_class": "LoginDialog",

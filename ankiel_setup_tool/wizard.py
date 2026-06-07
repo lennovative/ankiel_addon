@@ -96,6 +96,12 @@ _BTN_SETUP = (
     " border-radius:4px;font-size:10px;font-weight:bold;}"
     "QPushButton:hover{background:#3498db;}"
 )
+_BTN_LOGIN = (
+    "QPushButton{"
+    " background:#f39c12;color:white;padding:2px 7px;"
+    " border-radius:4px;font-size:10px;font-weight:bold;}"
+    "QPushButton:hover{background:#e67e22;}"
+)
 _BTN_UNINSTALL = (
     "QPushButton{"
     " background:#e74c3c;color:white;padding:2px 7px;"
@@ -348,7 +354,7 @@ class _AddonCard(QFrame):
                 btns.addWidget(setup_btn)
             if on_login:
                 login_btn = QPushButton("Anmelden")
-                login_btn.setStyleSheet(_BTN_SETUP)
+                login_btn.setStyleSheet(_BTN_LOGIN)
                 login_btn.clicked.connect(on_login)
                 btns.addWidget(login_btn)
             if on_update:
@@ -406,6 +412,9 @@ class AnkiSetupWizard(QDialog):
         self._town_config: dict = {}
         self._town_cards: List[_TownCard] = []
         self._town_search: Optional[QLineEdit] = None
+
+        # Navigation history
+        self._last_page: int = PAGE_UNI
 
         # Install state
         self._install_phase: str = ""
@@ -590,7 +599,7 @@ class AnkiSetupWizard(QDialog):
         top = QLabel(
             "<b style='font-size:14px;'>Übersicht & weitere Add-ons</b>"
             "  <span style='color:#7f8c8d;font-size:11px;'>"
-            "– optionale Add-ons auswählen</span>"
+            "– Add-ons verwalten, anmelden & weitere installieren</span>"
         )
         vl.addWidget(top)
 
@@ -696,7 +705,7 @@ class AnkiSetupWizard(QDialog):
     def _make_setup_callback(self, addon_id: str, addon_data: dict):
         """Return a callback for the Anleitung button, or None if no steps exist."""
         has_steps = any(
-            s.get("type") in ("instruction", "login")
+            s.get("type") == "instruction"
             for s in addon_data.get("setup_steps", [])
         )
         if not has_steps:
@@ -764,15 +773,16 @@ class AnkiSetupWizard(QDialog):
         login = addon_data.get("login", {})
         mod = sys.modules.get(login.get("login_module", ""))
         if not mod:
-            tooltip(
-                "Das Add-on ist noch nicht geladen. "
-                "Starte Anki neu."
-            )
+            tooltip("Das Add-on ist noch nicht geladen. Starte Anki neu.")
             return
-        dlg_class = getattr(mod, login.get("login_dialog_class", ""), None)
-        if not dlg_class:
+        target = getattr(mod, login.get("login_dialog_class", ""), None)
+        if not target:
             return
-        dlg_class(mw).exec()
+        method_name = login.get("login_method")
+        if method_name:
+            getattr(target, method_name)()
+        else:
+            target(mw).exec()
         self._back_to_overview()
 
     def _open_login_page(self, addon_id: str) -> None:
@@ -944,6 +954,9 @@ class AnkiSetupWizard(QDialog):
         parent.addWidget(bar)
 
     def _go_to(self, page: int) -> None:
+        current = self._stack.currentIndex()
+        if page != current and current not in (PAGE_INSTALL, PAGE_DONE):
+            self._last_page = current
         self._stack.setCurrentIndex(page)
         self._update_nav()
 
@@ -951,8 +964,8 @@ class AnkiSetupWizard(QDialog):
         page = self._stack.currentIndex()
 
         standalone = self._is_standalone_nav and page in (PAGE_STEPS, PAGE_UPDATE)
-        self._btn_back.setVisible(not standalone and page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
-        self._btn_back.setEnabled(not standalone and page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
+        self._btn_back.setVisible(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
+        self._btn_back.setEnabled(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
 
         if page == PAGE_DONE:
             self._btn_next.setText("Zur Übersicht")
@@ -986,11 +999,17 @@ class AnkiSetupWizard(QDialog):
                 self._step_idx -= 2  # _advance_step will +1, landing on step_idx-1
                 self._advance_step()
             else:
-                self._back_to_overview()
+                self._go_back()
         elif page == PAGE_UPDATE:
-            self._back_to_overview()
+            self._go_back()
         else:
             self._go_to(PAGE_UNI)
+
+    def _go_back(self) -> None:
+        if self._last_page == PAGE_UNI:
+            self._go_to(PAGE_UNI)
+        else:
+            self._back_to_overview()
 
     def _update_install_btn(self, *_) -> None:
         self._btn_next.setEnabled(any(c.is_checked() for c in self._addon_cards))
@@ -1247,7 +1266,7 @@ class AnkiSetupWizard(QDialog):
         addon = ADDON_CATALOG.get(addon_id, {})
         steps = [
             step for step in addon.get("setup_steps", [])
-            if step.get("type") in ("instruction", "login")
+            if step.get("type") == "instruction"
         ]
         if not steps:
             return
@@ -1337,9 +1356,13 @@ class AnkiSetupWizard(QDialog):
             self._steps_login_status.setStyleSheet("color:#e67e22;font-size:12px;padding:2px 0;")
             self._steps_login_status.show()
             return
-        dlg_class = getattr(mod, step.get("login_dialog_class", ""), None)
-        if dlg_class:
-            dlg_class(mw).exec()
+        target = getattr(mod, step.get("login_dialog_class", ""), None)
+        if target:
+            method_name = step.get("login_method")
+            if method_name:
+                getattr(target, method_name)()
+            else:
+                target(mw).exec()
         logged_in = self._check_is_logged_in(
             step.get("auth_module", ""), step.get("is_logged_in_attr", "")
         )
