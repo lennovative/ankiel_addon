@@ -433,6 +433,8 @@ class AnkiSetupWizard(QDialog):
         self._current_step_url: Optional[str] = None
         self._setup_mode: str = "install"  # "install" | "manual"
         self._is_standalone_nav: bool = False  # True when login/update opened directly
+        self._current_step_is_login: bool = False
+        self._current_step_logged_in: bool = False
 
         # Update-check state
         self._update_addon_id: str = ""
@@ -848,16 +850,6 @@ class AnkiSetupWizard(QDialog):
         self._steps_url_btn.hide()
         vl.addWidget(self._steps_url_btn)
 
-        self._steps_login_btn = QPushButton("🔑  Login-Fenster öffnen")
-        self._steps_login_btn.setStyleSheet(_BTN_PRIMARY)
-        self._steps_login_btn.clicked.connect(self._on_steps_login_click)
-        self._steps_login_btn.hide()
-        vl.addWidget(self._steps_login_btn)
-
-        self._steps_login_status = QLabel()
-        self._steps_login_status.setStyleSheet("font-size:12px;padding:2px 0;")
-        self._steps_login_status.hide()
-        vl.addWidget(self._steps_login_status)
         return page
 
     def _build_done_page(self) -> QWidget:
@@ -946,6 +938,27 @@ class AnkiSetupWizard(QDialog):
         hl.addWidget(self._btn_back)
         hl.addStretch()
 
+        self._steps_login_status = QLabel()
+        self._steps_login_status.setStyleSheet("font-size:12px;color:#7f8c8d;")
+        self._steps_login_status.hide()
+        hl.addWidget(self._steps_login_status)
+
+        self._btn_skip = QPushButton("Überspringen")
+        self._btn_skip.setStyleSheet(_BTN_SECONDARY)
+        self._btn_skip.clicked.connect(self._on_next)
+        self._btn_skip.hide()
+        hl.addWidget(self._btn_skip)
+
+        self._btn_login_step = QPushButton("🔑  Anmelden")
+        self._btn_login_step.setStyleSheet(
+            "QPushButton{background:#f39c12;color:white;padding:8px 22px;"
+            "border-radius:5px;font-weight:bold;font-size:12px;}"
+            "QPushButton:hover{background:#e67e22;}"
+        )
+        self._btn_login_step.clicked.connect(self._on_steps_login_click)
+        self._btn_login_step.hide()
+        hl.addWidget(self._btn_login_step)
+
         self._btn_next = QPushButton("Weiter →")
         self._btn_next.setStyleSheet(_BTN_PRIMARY)
         self._btn_next.clicked.connect(self._on_next)
@@ -963,16 +976,31 @@ class AnkiSetupWizard(QDialog):
     def _update_nav(self) -> None:
         page = self._stack.currentIndex()
 
-        standalone = self._is_standalone_nav and page in (PAGE_STEPS, PAGE_UPDATE)
         self._btn_back.setVisible(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
         self._btn_back.setEnabled(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
+
+        # Login-step mode: show Anmelden + Überspringen, hide Nächster Schritt
+        login_pending = (
+            page == PAGE_STEPS
+            and self._current_step_is_login
+            and not self._current_step_logged_in
+        )
+        on_steps = (page == PAGE_STEPS)
+        self._btn_login_step.setVisible(login_pending)
+        self._btn_skip.setVisible(login_pending)
+        self._btn_next.setVisible(not login_pending)
+        if not on_steps:
+            self._steps_login_status.hide()
+
+        if login_pending:
+            return
 
         if page == PAGE_DONE:
             self._btn_next.setText("Zur Übersicht")
             self._btn_next.setEnabled(True)
         elif page == PAGE_STEPS:
             is_last = self._step_idx >= len(self._step_queue) - 1
-            show_overview = standalone or (is_last and self._setup_mode == "manual")
+            show_overview = self._is_standalone_nav or (is_last and self._setup_mode == "manual")
             self._btn_next.setText("Zur Übersicht" if show_overview else "Nächster Schritt →")
             self._btn_next.setEnabled(True)
         elif page == PAGE_INSTALL:
@@ -1345,7 +1373,9 @@ class AnkiSetupWizard(QDialog):
             ):
                 self._advance_step()
                 return
-            # Optional website link (e.g. account registration)
+            self._current_step_is_login = True
+            self._current_step_logged_in = False
+            self._steps_login_status.hide()
             url = step.get("button_url")
             self._current_step_url = url
             if url:
@@ -1353,10 +1383,9 @@ class AnkiSetupWizard(QDialog):
                 self._steps_url_btn.show()
             else:
                 self._steps_url_btn.hide()
-            self._steps_login_btn.show()
-            self._steps_login_status.hide()
         else:
-            self._steps_login_btn.hide()
+            self._current_step_is_login = False
+            self._current_step_logged_in = False
             self._steps_login_status.hide()
             url = step.get("button_url")
             self._current_step_url = url
@@ -1394,6 +1423,8 @@ class AnkiSetupWizard(QDialog):
             step.get("auth_module", ""), step.get("is_logged_in_attr", "")
         )
         if logged_in:
+            self._current_step_logged_in = True
+            self._update_nav()
             self._steps_login_status.setText("✅  Angemeldet!")
             self._steps_login_status.setStyleSheet("color:#27ae60;font-size:12px;padding:2px 0;")
         else:
