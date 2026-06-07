@@ -15,7 +15,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from aqt import mw
 from aqt.addons import InstallOk, download_addons
@@ -114,6 +114,8 @@ _STEPS_STYLE = (
 )
 
 
+
+
 # ===========================================================================
 # Town card widget
 # ===========================================================================
@@ -198,6 +200,8 @@ class _AddonCard(QFrame):
         on_check_changed=None,
         on_setup=None,
         on_uninstall=None,
+        login_type: Optional[str] = None,
+        on_login=None,
         parent: QWidget = None,
     ) -> None:
         super().__init__(parent)
@@ -278,6 +282,24 @@ class _AddonCard(QFrame):
             )
             name_row.addWidget(b2)
 
+        if login_type == "external":
+            login_note = addon_data.get("login", {}).get("note", "")
+            b3 = QLabel("Externer Login")
+            b3.setStyleSheet(
+                "background:#eaecee;color:#566573;padding:2px 7px;"
+                "border-radius:9px;font-size:10px;"
+            )
+            if login_note:
+                b3.setToolTip(login_note)
+            name_row.addWidget(b3)
+        elif login_type == "logged_in":
+            b3 = QLabel("✓ Angemeldet")
+            b3.setStyleSheet(
+                "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
+                "border-radius:9px;font-size:10px;"
+            )
+            name_row.addWidget(b3)
+
         name_row.addStretch()
         txt.addLayout(name_row)
 
@@ -291,10 +313,15 @@ class _AddonCard(QFrame):
         row.addLayout(txt, stretch=1)
 
         # Right column: buttons only
-        if on_setup or on_uninstall:
+        if on_setup or on_uninstall or on_login:
             btns = QVBoxLayout()
             btns.setSpacing(4)
             btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
+            if on_login:
+                login_btn = QPushButton("Anmelden")
+                login_btn.setStyleSheet(_BTN_SETUP)
+                login_btn.clicked.connect(on_login)
+                btns.addWidget(login_btn)
             if on_setup:
                 setup_btn = QPushButton("Setup →")
                 setup_btn.setStyleSheet(_BTN_SETUP)
@@ -552,10 +579,13 @@ class AnkiSetupWizard(QDialog):
                 addon_data = ADDON_CATALOG.get(aid)
                 if not addon_data:
                     continue
+                login_type, on_login = self._make_login_callback(aid, addon_data)
                 card = _AddonCard(
                     addon_data, self._addons_folder,
                     read_only=True,
                     on_setup=self._make_setup_callback(aid, addon_data),
+                    login_type=login_type,
+                    on_login=on_login,
                 )
                 layout.addWidget(card)
                 self._addon_cards.append(card)
@@ -587,12 +617,15 @@ class AnkiSetupWizard(QDialog):
                         for c in addon_data.get("addon_codes", [])
                     )
                     on_uninstall = self._make_uninstall_callback(aid) if already else None
+                    login_type, on_login = self._make_login_callback(aid, addon_data) if already else (None, None)
                     card = _AddonCard(
                         addon_data, self._addons_folder,
                         read_only=already,
                         on_check_changed=self._update_install_btn,
                         on_setup=self._make_setup_callback(aid, addon_data) if already else None,
                         on_uninstall=on_uninstall,
+                        login_type=login_type,
+                        on_login=on_login,
                     )
                     layout.addWidget(card)
                     self._addon_cards.append(card)
@@ -602,7 +635,7 @@ class AnkiSetupWizard(QDialog):
     def _make_setup_callback(self, addon_id: str, addon_data: dict):
         """Return a callback that opens the update+setup page, or None if no steps exist."""
         has_steps = any(
-            s.get("type") == "instruction"
+            s.get("type") in ("instruction", "login")
             for s in addon_data.get("setup_steps", [])
         )
         if not has_steps:
@@ -615,6 +648,66 @@ class AnkiSetupWizard(QDialog):
         def _cb(_checked=False, _aid=addon_id):
             self._uninstall_addon(_aid)
         return _cb
+
+    def _check_is_logged_in(self, auth_module: str, attr_path: str) -> bool:
+        """Check login state via the addon's own auth_manager (requires addon to be loaded)."""
+        import sys
+        if not auth_module or not attr_path:
+            return False
+        mod = sys.modules.get(auth_module)
+        if not mod:
+            return False
+        obj: Any = mod
+        for attr in attr_path.split("."):
+            obj = getattr(obj, attr, None)
+            if obj is None:
+                return False
+        try:
+            return bool(obj())
+        except Exception:
+            return False
+
+    def _make_login_callback(self, _addon_id: str, addon_data: dict):
+        """Return (card_login_type, callback) or (None, None) if no login spec."""
+        login = addon_data.get("login", {})
+        login_type = login.get("type")
+        if not login_type:
+            return None, None
+        if login_type == "external":
+            return "external", None
+        elif login_type == "native":
+            logged_in = self._check_is_logged_in(
+                login.get("auth_module", ""),
+                login.get("is_logged_in_attr", ""),
+            )
+            if logged_in:
+                return "logged_in", None
+            def _cb_native(_checked=False, _data=addon_data):
+                self._open_native_login_for_card(_data)
+            return "native", _cb_native
+        elif login_type == "browser":
+            url = login.get("url", "")
+            def _cb_browser(_checked=False, _url=url):
+                QDesktopServices.openUrl(QUrl(_url))
+            return "browser", _cb_browser
+        return None, None
+
+    def _open_native_login_for_card(self, addon_data: dict) -> None:
+        """Open the addon's own login dialog and refresh the overview afterward."""
+        import sys
+        login = addon_data.get("login", {})
+        mod = sys.modules.get(login.get("login_module", ""))
+        if not mod:
+            tooltip(
+                "Das Add-on ist noch nicht geladen. "
+                "Starte Anki neu und öffne den Setup erneut."
+            )
+            return
+        dlg_class = getattr(mod, login.get("login_dialog_class", ""), None)
+        if not dlg_class:
+            return
+        dlg_class(mw).exec()
+        self._back_to_overview()
 
     def _uninstall_addon(self, addon_id: str) -> None:
         import shutil
@@ -660,6 +753,17 @@ class AnkiSetupWizard(QDialog):
         self._steps_url_btn.clicked.connect(self._open_step_url)
         self._steps_url_btn.hide()
         vl.addWidget(self._steps_url_btn)
+
+        self._steps_login_btn = QPushButton("🔑  Login-Fenster öffnen")
+        self._steps_login_btn.setStyleSheet(_BTN_PRIMARY)
+        self._steps_login_btn.clicked.connect(self._on_steps_login_click)
+        self._steps_login_btn.hide()
+        vl.addWidget(self._steps_login_btn)
+
+        self._steps_login_status = QLabel()
+        self._steps_login_status.setStyleSheet("font-size:12px;padding:2px 0;")
+        self._steps_login_status.hide()
+        vl.addWidget(self._steps_login_status)
         return page
 
     def _build_done_page(self) -> QWidget:
@@ -770,7 +874,7 @@ class AnkiSetupWizard(QDialog):
         self._btn_skip.setVisible(page == PAGE_STEPS)
 
         if page == PAGE_DONE:
-            self._btn_next.setText("← Zur Übersicht")
+            self._btn_next.setText("Zur Übersicht")
             self._btn_next.setEnabled(True)
         elif page == PAGE_STEPS:
             self._btn_next.setText("Nächster Schritt →")
@@ -1028,7 +1132,7 @@ class AnkiSetupWizard(QDialog):
         for aid in self._newly_installed_ids:
             addon = ADDON_CATALOG.get(aid, {})
             for step in addon.get("setup_steps", []):
-                if step.get("type") == "instruction":
+                if step.get("type") in ("instruction", "login"):
                     self._step_queue.append((aid, step))
 
         self._step_idx = -1
@@ -1042,7 +1146,7 @@ class AnkiSetupWizard(QDialog):
         addon = ADDON_CATALOG.get(addon_id, {})
         steps = [
             step for step in addon.get("setup_steps", [])
-            if step.get("type") == "instruction"
+            if step.get("type") in ("instruction", "login")
         ]
         if not steps:
             return
@@ -1086,19 +1190,57 @@ class AnkiSetupWizard(QDialog):
         self._steps_title_lbl.setText(step["title"])
         self._steps_desc.setPlainText(step.get("description", ""))
 
-        url = step.get("button_url")
-        self._current_step_url = url
-        if url:
-            self._steps_url_btn.setText(step.get("button_label", "Link öffnen"))
-            self._steps_url_btn.show()
-        else:
+        if step.get("type") == "login":
+            # Auto-skip if already logged in
+            if step.get("skip_if_logged_in") and self._check_is_logged_in(
+                step.get("auth_module", ""), step.get("is_logged_in_attr", "")
+            ):
+                self._advance_step()
+                return
             self._steps_url_btn.hide()
+            self._steps_login_btn.show()
+            self._steps_login_status.hide()
+        else:
+            self._steps_login_btn.hide()
+            self._steps_login_status.hide()
+            url = step.get("button_url")
+            self._current_step_url = url
+            if url:
+                self._steps_url_btn.setText(step.get("button_label", "Link öffnen"))
+                self._steps_url_btn.show()
+            else:
+                self._steps_url_btn.hide()
 
         self._go_to(PAGE_STEPS)
 
     def _open_step_url(self) -> None:
         if self._current_step_url:
             QDesktopServices.openUrl(QUrl(self._current_step_url))
+
+    def _on_steps_login_click(self) -> None:
+        import sys
+        _, step = self._step_queue[self._step_idx]
+        mod = sys.modules.get(step.get("login_module", ""))
+        if not mod:
+            self._steps_login_status.setText(
+                "⚠️  Add-on noch nicht geladen – starte Anki neu und öffne den Setup erneut."
+            )
+            self._steps_login_status.setStyleSheet("color:#e67e22;font-size:12px;padding:2px 0;")
+            self._steps_login_status.show()
+            return
+        dlg_class = getattr(mod, step.get("login_dialog_class", ""), None)
+        if dlg_class:
+            dlg_class(mw).exec()
+        logged_in = self._check_is_logged_in(
+            step.get("auth_module", ""), step.get("is_logged_in_attr", "")
+        )
+        if logged_in:
+            self._steps_login_status.setText("✅  Angemeldet!")
+            self._steps_login_status.setStyleSheet("color:#27ae60;font-size:12px;padding:2px 0;")
+        else:
+            self._steps_login_status.setText("Noch nicht angemeldet.")
+            self._steps_login_status.setStyleSheet("color:#7f8c8d;font-size:12px;padding:2px 0;")
+        self._steps_login_status.show()
 
     # -----------------------------------------------------------------------
     # Completion

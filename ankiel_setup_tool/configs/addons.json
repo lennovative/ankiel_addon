@@ -42,6 +42,10 @@
       "addon_codes": ["1322529746"],
       "requires_account": true,
       "external_url": "https://www.ankihub.net",
+      "login": {
+        "type": "external",
+        "note": "Login über das AnkiHub-Fenster, das beim ersten Anki-Start automatisch öffnet."
+      },
       "setup_steps": [
         {
           "type": "instruction",
@@ -74,6 +78,10 @@
       "addon_codes": ["1044112126"],
       "requires_account": true,
       "external_url": "https://www.amboss.com",
+      "login": {
+        "type": "external",
+        "note": "Login über Werkzeuge → AMBOSS → Einstellungen in Anki."
+      },
       "setup_steps": [
         {
           "type": "install",
@@ -101,6 +109,10 @@
       "addon_codes": ["1110557695"],
       "requires_account": true,
       "external_url": "https://www.meditricks.de/anki/",
+      "login": {
+        "type": "external",
+        "note": "Login über Werkzeuge → Meditricks in Anki."
+      },
       "setup_steps": [
         {
           "type": "install",
@@ -128,6 +140,14 @@
       "addon_codes": ["1957538407"],
       "requires_account": true,
       "external_url": "https://www.ankicollab.com",
+      "login": {
+        "type": "native",
+        "login_module": "1957538407.dialogs",
+        "login_dialog_class": "LoginDialog",
+        "auth_module": "1957538407.auth_manager",
+        "is_logged_in_attr": "auth_manager.is_logged_in",
+        "note": "Noch kein Konto? ankicollab.com/Login → 'Sign Up'"
+      },
       "setup_steps": [
         {
           "type": "install",
@@ -143,9 +163,14 @@
           "button_url": "https://www.ankicollab.com/Login"
         },
         {
-          "type": "instruction",
-          "title": "In Anki einloggen",
-          "description": "Nach dem Neustart von Anki:\n\n1. Klicke in der Menüleiste auf 'AnkiCollab'.\n2. Wähle 'Login' und gib deine Zugangsdaten ein.\n3. Nach dem Login erscheint ✓ neben 'AnkiCollab'."
+          "type": "login",
+          "title": "In AnkiCollab einloggen",
+          "description": "Klicke auf 'Login-Fenster öffnen' und melde dich mit deinen AnkiCollab-Zugangsdaten an.\n\nFalls das Add-on noch nicht geladen ist (direkt nach der Installation), starte Anki einmal neu und öffne den Setup erneut.",
+          "skip_if_logged_in": true,
+          "login_module": "1957538407.dialogs",
+          "login_dialog_class": "LoginDialog",
+          "auth_module": "1957538407.auth_manager",
+          "is_logged_in_attr": "auth_manager.is_logged_in"
         },
         {
           "type": "instruction",
