@@ -1413,11 +1413,18 @@ class AnkiSetupWizard(QDialog):
         except OSError:
             pass
         self.accept()
-        try:
-            subprocess.Popen(sys.argv)
-        except Exception:
-            pass
-        QTimer.singleShot(300, mw.app.quit)
+        # Try the anki launcher first (works on all platforms when anki is in
+        # PATH), then fall back to re-executing with sys.argv (Windows/macOS).
+        launched = False
+        for cmd in (["anki"], sys.argv):
+            try:
+                subprocess.Popen(cmd)
+                launched = True
+                break
+            except Exception:
+                pass
+        if launched:
+            QTimer.singleShot(300, mw.app.quit)
 
     def _show_done(self) -> None:
         installed = [
