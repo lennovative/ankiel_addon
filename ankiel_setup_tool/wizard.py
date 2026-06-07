@@ -239,24 +239,16 @@ class _AddonCard(QFrame):
 
         txt = QVBoxLayout()
         txt.setSpacing(1)
+
+        # Title row: name + inline badges
+        name_row = QHBoxLayout()
+        name_row.setSpacing(6)
         name_lbl = QLabel(
             f"<b>{addon_data['name']}</b>"
             f"  <span style='color:#7f8c8d;font-size:10px;'>#{addon_data['addon_codes'][0]}</span>"
         )
         name_lbl.setStyleSheet("font-size:13px;")
-        subtitle_lbl = QLabel(addon_data.get("subtitle", ""))
-        subtitle_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
-        desc_lbl = QLabel(addon_data["description"])
-        desc_lbl.setWordWrap(True)
-        desc_lbl.setStyleSheet("color:#555;font-size:11px;margin-top:2px;")
-        txt.addWidget(name_lbl)
-        txt.addWidget(subtitle_lbl)
-        txt.addWidget(desc_lbl)
-        row.addLayout(txt, stretch=1)
-
-        badges = QVBoxLayout()
-        badges.setSpacing(4)
-        badges.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
+        name_row.addWidget(name_lbl)
 
         if read_only:
             b = QLabel("✓ Installiert")
@@ -264,7 +256,7 @@ class _AddonCard(QFrame):
                 "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
             )
-            badges.addWidget(b)
+            name_row.addWidget(b)
         else:
             already = all(
                 is_addon_installed(str(c), addons_folder)
@@ -276,7 +268,7 @@ class _AddonCard(QFrame):
                     "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
                     "border-radius:9px;font-size:10px;"
                 )
-                badges.addWidget(b)
+                name_row.addWidget(b)
 
         if addon_data.get("requires_account"):
             b2 = QLabel("Account nötig")
@@ -284,22 +276,37 @@ class _AddonCard(QFrame):
                 "background:#fef9e7;color:#9a7d0a;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
             )
-            badges.addWidget(b2)
+            name_row.addWidget(b2)
 
-        if on_setup:
-            setup_btn = QPushButton("Setup →")
-            setup_btn.setStyleSheet(_BTN_SETUP)
-            setup_btn.clicked.connect(on_setup)
-            badges.addWidget(setup_btn)
+        name_row.addStretch()
+        txt.addLayout(name_row)
 
-        if on_uninstall:
-            uninstall_btn = QPushButton("Deinstallieren")
-            uninstall_btn.setStyleSheet(_BTN_UNINSTALL)
-            uninstall_btn.clicked.connect(on_uninstall)
-            badges.addWidget(uninstall_btn)
+        subtitle_lbl = QLabel(addon_data.get("subtitle", ""))
+        subtitle_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
+        desc_lbl = QLabel(addon_data["description"])
+        desc_lbl.setWordWrap(True)
+        desc_lbl.setStyleSheet("color:#555;font-size:11px;margin-top:2px;")
+        txt.addWidget(subtitle_lbl)
+        txt.addWidget(desc_lbl)
+        row.addLayout(txt, stretch=1)
 
-        badges.addStretch()
-        row.addLayout(badges)
+        # Right column: buttons only
+        if on_setup or on_uninstall:
+            btns = QVBoxLayout()
+            btns.setSpacing(4)
+            btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
+            if on_setup:
+                setup_btn = QPushButton("Setup →")
+                setup_btn.setStyleSheet(_BTN_SETUP)
+                setup_btn.clicked.connect(on_setup)
+                btns.addWidget(setup_btn)
+            if on_uninstall:
+                uninstall_btn = QPushButton("Deinstallieren")
+                uninstall_btn.setStyleSheet(_BTN_UNINSTALL)
+                uninstall_btn.clicked.connect(on_uninstall)
+                btns.addWidget(uninstall_btn)
+            btns.addStretch()
+            row.addLayout(btns)
 
     def mousePressEvent(self, event) -> None:  # type: ignore[override]
         if self._read_only:
@@ -436,7 +443,7 @@ class AnkiSetupWizard(QDialog):
         vl.addWidget(top)
 
         hint = QLabel(
-            "Die grundlegenden Add-ons für deinen Standort werden automatisch installiert."
+            "Add-ons für deinen Standort werden automatisch installiert."
         )
         hint.setStyleSheet("color:#7f8c8d;font-size:11px;padding-bottom:4px;")
         vl.addWidget(hint)
@@ -497,7 +504,7 @@ class AnkiSetupWizard(QDialog):
         top = QLabel(
             "<b style='font-size:14px;'>Übersicht & weitere Add-ons</b>"
             "  <span style='color:#7f8c8d;font-size:11px;'>"
-            "– Grundlagen installiert · optionale Add-ons auswählen</span>"
+            "– optionale Add-ons auswählen</span>"
         )
         vl.addWidget(top)
 
@@ -536,7 +543,7 @@ class AnkiSetupWizard(QDialog):
         self._addon_cards = []
 
         if basic_ids:
-            section_lbl = QLabel("✅  Grundlagen – automatisch installiert")
+            section_lbl = QLabel("✅  Basics – automatisch installiert")
             section_lbl.setStyleSheet(
                 "color:#1e8449;font-weight:bold;font-size:12px;padding:6px 2px 2px 2px;"
             )
