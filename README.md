@@ -102,8 +102,3 @@ ankiel_setup_tool/
   manifest.json        Anki package metadata
 ```
 
----
-
-## License
-
-MIT
