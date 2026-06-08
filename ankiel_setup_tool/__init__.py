@@ -121,6 +121,11 @@ def _on_toolbar_init(links: list, toolbar) -> None:
     )
 
 
+def _is_only_addon() -> bool:
+    others = [a for a in mw.addonManager.allAddons() if a != "ankiel_setup_tool"]
+    return len(others) == 0
+
+
 def _register_menu() -> None:
     action = QAction("AnKiel Setup Tool", mw)
     action.triggered.connect(_show_wizard)
@@ -132,6 +137,8 @@ def _register_menu() -> None:
         except OSError:
             pass
         _show_wizard(post_restart=True)
+    elif _is_only_addon():
+        _show_wizard()
 
 
 gui_hooks.main_window_did_init.append(_register_menu)
