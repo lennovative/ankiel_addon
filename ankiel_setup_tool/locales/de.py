@@ -10,6 +10,10 @@ STRINGS = {
     "uni_hint": "Add-ons für deinen Standort werden automatisch installiert.",
     "uni_search_placeholder": "🔍  Suchen…",
 
+    # Install step template (generated dynamically, not stored in addons.json)
+    "step_install_title": "{name} installieren",
+    "step_install_description": "Das Add-on {name} wird heruntergeladen und installiert.",
+
     # Install page — status labels
     "install_status_default": "Installiere Add-ons…",
     "install_status_downloading": "Lade {count} Paket(e) herunter…",
