@@ -330,6 +330,31 @@ class _AddonCard(QFrame):
             name_row.addWidget(b3)
 
         name_row.addStretch()
+
+        external_url = addon_data.get("external_url", "")
+        if external_url:
+            link_lbl = QLabel("↗")
+            link_lbl.setFixedSize(20, 20)
+            link_lbl.setAlignment(_ALIGN_CENTER)
+            try:
+                link_lbl.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+            except AttributeError:
+                link_lbl.setAttribute(Qt.WA_Hover, True)  # type: ignore[attr-defined]
+            link_lbl.setStyleSheet(
+                "QLabel{background:#d6eaf8;color:#2980b9;border-radius:10px;"
+                "font-size:11px;font-weight:bold;}"
+                "QLabel:hover{background:#aed6f1;}"
+            )
+            try:
+                link_lbl.setCursor(Qt.CursorShape.PointingHandCursor)
+            except AttributeError:
+                link_lbl.setCursor(Qt.PointingHandCursor)  # type: ignore[attr-defined]
+            link_lbl.setToolTip(external_url)
+            def _open_url(_e, _url=external_url) -> None:
+                QDesktopServices.openUrl(QUrl(_url))
+            link_lbl.mousePressEvent = _open_url  # type: ignore[method-assign]
+            name_row.addWidget(link_lbl)
+
         txt.addLayout(name_row)
 
         subtitle_lbl = QLabel(addon_data.get("subtitle", ""))
@@ -347,24 +372,29 @@ class _AddonCard(QFrame):
             btns = QVBoxLayout()
             btns.setSpacing(4)
             btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
+            _BTN_H = 24
             if on_login:
                 login_btn = QPushButton(T["btn_card_login"])
                 login_btn.setStyleSheet(_BTN_LOGIN)
+                login_btn.setFixedHeight(_BTN_H)
                 login_btn.clicked.connect(on_login)
                 btns.addWidget(login_btn)
             if on_setup:
                 setup_btn = QPushButton(T["btn_card_setup"])
                 setup_btn.setStyleSheet(_BTN_SETUP)
+                setup_btn.setFixedHeight(_BTN_H)
                 setup_btn.clicked.connect(on_setup)
                 btns.addWidget(setup_btn)
             if on_update:
                 update_btn = QPushButton(T["btn_card_update"])
                 update_btn.setStyleSheet(_BTN_SETUP)
+                update_btn.setFixedHeight(_BTN_H)
                 update_btn.clicked.connect(on_update)
                 btns.addWidget(update_btn)
             if on_uninstall:
                 uninstall_btn = QPushButton(T["btn_card_uninstall"])
                 uninstall_btn.setStyleSheet(_BTN_UNINSTALL)
+                uninstall_btn.setFixedHeight(_BTN_H)
                 uninstall_btn.clicked.connect(on_uninstall)
                 btns.addWidget(uninstall_btn)
             btns.addStretch()
