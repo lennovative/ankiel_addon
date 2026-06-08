@@ -43,6 +43,7 @@ from aqt.utils import tooltip
 from .addon_defs import ADDON_CATALOG, CATEGORIES
 from .config_loader import list_towns, load_state, save_state
 from .installer import is_addon_installed
+from .locales import T
 
 # ---------------------------------------------------------------------------
 # Qt 5 / 6 compatibility shim
@@ -120,7 +121,6 @@ _STEPS_STYLE = (
     " font-size:13px;border:1px solid #dee2e6;border-radius:4px;"
     " padding:8px;}"
 )
-
 
 
 
@@ -284,7 +284,7 @@ class _AddonCard(QFrame):
         name_row.addWidget(name_lbl)
 
         if read_only:
-            b = QLabel("✓ Installiert")
+            b = QLabel(T["badge_installed"])
             b.setStyleSheet(
                 "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
@@ -296,7 +296,7 @@ class _AddonCard(QFrame):
                 for c in addon_data.get("addon_codes", [])
             )
             if already:
-                b = QLabel("✓ Installiert")
+                b = QLabel(T["badge_installed"])
                 b.setStyleSheet(
                     "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
                     "border-radius:9px;font-size:10px;"
@@ -304,7 +304,7 @@ class _AddonCard(QFrame):
                 name_row.addWidget(b)
 
         if addon_data.get("requires_account"):
-            b2 = QLabel("Account nötig")
+            b2 = QLabel(T["badge_account_needed"])
             b2.setStyleSheet(
                 "background:#fef9e7;color:#9a7d0a;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
@@ -313,7 +313,7 @@ class _AddonCard(QFrame):
 
         if login_type == "external":
             login_note = addon_data.get("login", {}).get("note", "")
-            b3 = QLabel("Externer Login")
+            b3 = QLabel(T["badge_external_login"])
             b3.setStyleSheet(
                 "background:#eaecee;color:#566573;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
@@ -322,7 +322,7 @@ class _AddonCard(QFrame):
                 b3.setToolTip(login_note)
             name_row.addWidget(b3)
         elif login_type == "logged_in":
-            b3 = QLabel("✓ Angemeldet")
+            b3 = QLabel(T["badge_logged_in"])
             b3.setStyleSheet(
                 "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
                 "border-radius:9px;font-size:10px;"
@@ -348,22 +348,22 @@ class _AddonCard(QFrame):
             btns.setSpacing(4)
             btns.setAlignment(_ALIGN_TOP | _ALIGN_RIGHT)
             if on_login:
-                login_btn = QPushButton("Anmelden")
+                login_btn = QPushButton(T["btn_card_login"])
                 login_btn.setStyleSheet(_BTN_LOGIN)
                 login_btn.clicked.connect(on_login)
                 btns.addWidget(login_btn)
             if on_setup:
-                setup_btn = QPushButton("Anleitung")
+                setup_btn = QPushButton(T["btn_card_setup"])
                 setup_btn.setStyleSheet(_BTN_SETUP)
                 setup_btn.clicked.connect(on_setup)
                 btns.addWidget(setup_btn)
             if on_update:
-                update_btn = QPushButton("Updates prüfen")
+                update_btn = QPushButton(T["btn_card_update"])
                 update_btn.setStyleSheet(_BTN_SETUP)
                 update_btn.clicked.connect(on_update)
                 btns.addWidget(update_btn)
             if on_uninstall:
-                uninstall_btn = QPushButton("Deinstallieren")
+                uninstall_btn = QPushButton(T["btn_card_uninstall"])
                 uninstall_btn.setStyleSheet(_BTN_UNINSTALL)
                 uninstall_btn.clicked.connect(on_uninstall)
                 btns.addWidget(uninstall_btn)
@@ -401,7 +401,7 @@ class AnkiSetupWizard(QDialog):
 
     def __init__(self, parent=None, post_restart: bool = False) -> None:
         super().__init__(parent)
-        self.setWindowTitle("AnKiel")
+        self.setWindowTitle(T["window_title"])
         self.setMinimumSize(820, 720)
         self.resize(860, 700)
 
@@ -494,9 +494,9 @@ class AnkiSetupWizard(QDialog):
         )
         hl = QHBoxLayout(hdr)
         hl.setContentsMargins(20, 10, 20, 10)
-        title = QLabel("AnKiel Setup")
+        title = QLabel(T["header_title"])
         title.setStyleSheet("color:white;font-size:19px;font-weight:bold;")
-        sub = QLabel("Add-ons installieren und einrichten")
+        sub = QLabel(T["header_subtitle"])
         sub.setStyleSheet("color:#85c1e9;font-size:11px;")
         col = QVBoxLayout()
         col.setSpacing(1)
@@ -517,18 +517,17 @@ class AnkiSetupWizard(QDialog):
         vl.setSpacing(6)
 
         top = QLabel(
-            "<b style='font-size:14px;'>Hochschule auswählen</b>"
-            "  <span style='color:#7f8c8d;font-size:11px;'>"
-            "– Wähle deine Uni oder deinen Standort</span>"
+            f"<b style='font-size:14px;'>{T['uni_heading']}</b>"
+            f"  <span style='color:#7f8c8d;font-size:11px;'>– {T['uni_subheading']}</span>"
         )
         vl.addWidget(top)
 
-        hint = QLabel("Add-ons für deinen Standort werden automatisch installiert.")
+        hint = QLabel(T["uni_hint"])
         hint.setStyleSheet("color:#7f8c8d;font-size:11px;padding-bottom:2px;")
         vl.addWidget(hint)
 
         search = QLineEdit()
-        search.setPlaceholderText("🔍  Suchen…")
+        search.setPlaceholderText(T["uni_search_placeholder"])
         search.setStyleSheet(
             "QLineEdit{padding:6px 10px;font-size:13px;"
             "border:2px solid #dee2e6;border-radius:6px;background:#fff;}"
@@ -576,7 +575,7 @@ class AnkiSetupWizard(QDialog):
         vl.setContentsMargins(26, 18, 26, 14)
         vl.setSpacing(10)
 
-        self._install_status_lbl = QLabel("<b>Installiere Add-ons…</b>")
+        self._install_status_lbl = QLabel(f"<b>{T['install_status_default']}</b>")
         self._install_status_lbl.setStyleSheet("font-size:14px;")
         vl.addWidget(self._install_status_lbl)
 
@@ -599,9 +598,8 @@ class AnkiSetupWizard(QDialog):
         vl.setSpacing(6)
 
         top = QLabel(
-            "<b style='font-size:14px;'>Übersicht & weitere Add-ons</b>"
-            "  <span style='color:#7f8c8d;font-size:11px;'>"
-            "– Add-ons verwalten, anmelden & weitere installieren</span>"
+            f"<b style='font-size:14px;'>{T['select_heading']}</b>"
+            f"  <span style='color:#7f8c8d;font-size:11px;'>– {T['select_subheading']}</span>"
         )
         vl.addWidget(top)
 
@@ -618,10 +616,10 @@ class AnkiSetupWizard(QDialog):
         vl.addWidget(scroll, stretch=1)
 
         btn_row = QHBoxLayout()
-        all_btn = QPushButton("Alle auswählen")
+        all_btn = QPushButton(T["select_btn_all"])
         all_btn.setStyleSheet(_BTN_SECONDARY)
         all_btn.clicked.connect(lambda: [c.set_checked(True) for c in self._addon_cards])
-        none_btn = QPushButton("Keine")
+        none_btn = QPushButton(T["select_btn_none"])
         none_btn.setStyleSheet(_BTN_SECONDARY)
         none_btn.clicked.connect(lambda: [c.set_checked(False) for c in self._addon_cards])
         btn_row.addWidget(all_btn)
@@ -640,7 +638,7 @@ class AnkiSetupWizard(QDialog):
         self._addon_cards = []
 
         if basic_ids:
-            section_lbl = QLabel("✅  Basics – automatisch installiert")
+            section_lbl = QLabel(T["select_section_basics"])
             section_lbl.setStyleSheet(
                 "color:#1e8449;font-weight:bold;font-size:12px;padding:6px 2px 2px 2px;"
             )
@@ -662,7 +660,7 @@ class AnkiSetupWizard(QDialog):
                 self._addon_cards.append(card)
 
         if optional_ids:
-            section_lbl2 = QLabel("➕  Weitere Add-ons (optional)")
+            section_lbl2 = QLabel(T["select_section_optional"])
             section_lbl2.setStyleSheet(
                 "color:#2980b9;font-weight:bold;font-size:12px;padding:12px 2px 2px 2px;"
             )
@@ -775,7 +773,7 @@ class AnkiSetupWizard(QDialog):
         login = addon_data.get("login", {})
         mod = sys.modules.get(login.get("login_module", ""))
         if not mod:
-            tooltip("Das Add-on ist noch nicht geladen. Starte Anki neu.")
+            tooltip(T["msg_addon_not_loaded"])
             return
         target = getattr(mod, login.get("login_dialog_class", ""), None)
         if not target:
@@ -812,7 +810,7 @@ class AnkiSetupWizard(QDialog):
         addon = ADDON_CATALOG.get(addon_id, {})
         name = addon.get("name", addon_id)
 
-        if not askUser(f"Möchtest du '{name}' wirklich deinstallieren?"):
+        if not askUser(T["msg_confirm_uninstall"].format(name=name)):
             return
 
         for code in addon.get("addon_codes", []):
@@ -844,7 +842,7 @@ class AnkiSetupWizard(QDialog):
         self._steps_desc.setStyleSheet(_STEPS_STYLE)
         vl.addWidget(self._steps_desc, stretch=1)
 
-        self._steps_url_btn = QPushButton("Link öffnen")
+        self._steps_url_btn = QPushButton(T["steps_url_btn_default"])
         self._steps_url_btn.setStyleSheet(_BTN_GREEN)
         self._steps_url_btn.clicked.connect(self._open_step_url)
         self._steps_url_btn.hide()
@@ -864,7 +862,7 @@ class AnkiSetupWizard(QDialog):
         icon_lbl.setAlignment(_ALIGN_CENTER)
         vl.addWidget(icon_lbl)
 
-        vl.addWidget(QLabel("<h2>Installation abgeschlossen!</h2>"))
+        vl.addWidget(QLabel(f"<h2>{T['done_title']}</h2>"))
 
         self._done_summary_lbl = QLabel()
         self._done_summary_lbl.setWordWrap(True)
@@ -872,13 +870,13 @@ class AnkiSetupWizard(QDialog):
         self._done_summary_lbl.setStyleSheet("font-size:13px;color:#555;")
         vl.addWidget(self._done_summary_lbl)
 
-        restart_note = QLabel("Neu installierte Add-ons sind erst nach einem Neustart aktiv.")
+        restart_note = QLabel(T["done_restart_note"])
         restart_note.setWordWrap(True)
         restart_note.setAlignment(_ALIGN_CENTER)
         restart_note.setStyleSheet("color:#856404;font-size:11px;")
         vl.addWidget(restart_note)
 
-        restart_btn = QPushButton("Anki neu starten")
+        restart_btn = QPushButton(T["done_restart_btn"])
         restart_btn.setStyleSheet(
             "QPushButton{background:#e67e22;color:white;padding:10px 28px;"
             "border-radius:6px;font-size:13px;font-weight:bold;}"
@@ -903,7 +901,7 @@ class AnkiSetupWizard(QDialog):
         self._update_version_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
         vl.addWidget(self._update_version_lbl)
 
-        self._update_check_btn = QPushButton("🔍  Auf Updates prüfen")
+        self._update_check_btn = QPushButton(T["update_check_btn"])
         self._update_check_btn.setStyleSheet(_BTN_PRIMARY)
         self._update_check_btn.setFixedWidth(220)
         self._update_check_btn.clicked.connect(self._check_for_updates)
@@ -913,10 +911,7 @@ class AnkiSetupWizard(QDialog):
         self._update_log.setStyleSheet(_LOG_STYLE)
         vl.addWidget(self._update_log, stretch=1)
 
-        hint = QLabel(
-            "💡 Nach einer Aktualisierung muss Anki neu gestartet werden, "
-            "damit das Update aktiv wird."
-        )
+        hint = QLabel(T["update_hint"])
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#7f8c8d;font-size:11px;")
         vl.addWidget(hint)
@@ -932,7 +927,7 @@ class AnkiSetupWizard(QDialog):
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(20, 8, 20, 8)
 
-        self._btn_back = QPushButton("← Zurück")
+        self._btn_back = QPushButton(T["nav_back"])
         self._btn_back.setStyleSheet(_BTN_SECONDARY)
         self._btn_back.clicked.connect(self._on_back)
         hl.addWidget(self._btn_back)
@@ -943,13 +938,13 @@ class AnkiSetupWizard(QDialog):
         self._steps_login_status.hide()
         hl.addWidget(self._steps_login_status)
 
-        self._btn_skip = QPushButton("Überspringen")
+        self._btn_skip = QPushButton(T["nav_skip"])
         self._btn_skip.setStyleSheet(_BTN_SECONDARY)
         self._btn_skip.clicked.connect(self._on_next)
         self._btn_skip.hide()
         hl.addWidget(self._btn_skip)
 
-        self._btn_login_step = QPushButton("🔑  Anmelden")
+        self._btn_login_step = QPushButton(T["nav_login"])
         self._btn_login_step.setStyleSheet(
             "QPushButton{background:#f39c12;color:white;padding:8px 22px;"
             "border-radius:5px;font-weight:bold;font-size:12px;}"
@@ -959,7 +954,7 @@ class AnkiSetupWizard(QDialog):
         self._btn_login_step.hide()
         hl.addWidget(self._btn_login_step)
 
-        self._btn_next = QPushButton("Weiter →")
+        self._btn_next = QPushButton(T["nav_next"])
         self._btn_next.setStyleSheet(_BTN_PRIMARY)
         self._btn_next.clicked.connect(self._on_next)
         hl.addWidget(self._btn_next)
@@ -996,24 +991,24 @@ class AnkiSetupWizard(QDialog):
             return
 
         if page == PAGE_DONE:
-            self._btn_next.setText("Zur Übersicht")
+            self._btn_next.setText(T["nav_overview"])
             self._btn_next.setEnabled(True)
         elif page == PAGE_STEPS:
             is_last = self._step_idx >= len(self._step_queue) - 1
             show_overview = self._is_standalone_nav or (is_last and self._setup_mode == "manual")
-            self._btn_next.setText("Zur Übersicht" if show_overview else "Nächster Schritt →")
+            self._btn_next.setText(T["nav_overview"] if show_overview else T["nav_next_step"])
             self._btn_next.setEnabled(True)
         elif page == PAGE_INSTALL:
-            self._btn_next.setText("Installiere…")
+            self._btn_next.setText(T["nav_installing"])
             self._btn_next.setEnabled(False)
         elif page == PAGE_SELECT:
-            self._btn_next.setText("Installieren →")
+            self._btn_next.setText(T["nav_install"])
             self._btn_next.setEnabled(False)
         elif page == PAGE_UPDATE:
-            self._btn_next.setText("Zur Übersicht")
+            self._btn_next.setText(T["nav_overview"])
             self._btn_next.setEnabled(True)
         else:  # PAGE_UNI
-            self._btn_next.setText("Weiter →")
+            self._btn_next.setText(T["nav_next"])
             self._btn_next.setEnabled(True)
 
     # -----------------------------------------------------------------------
@@ -1048,7 +1043,7 @@ class AnkiSetupWizard(QDialog):
             self._back_to_overview()
         elif page == PAGE_UNI:
             if not self._selected_town_id:
-                tooltip("Bitte wähle eine Hochschule aus.")
+                tooltip(T["msg_select_uni"])
                 return
             self._start_basic_install()
         elif page == PAGE_SELECT:
@@ -1089,7 +1084,7 @@ class AnkiSetupWizard(QDialog):
                     mod = json.load(f).get("mod", 0)
                 if mod:
                     dt = datetime.datetime.fromtimestamp(mod).strftime("%d.%m.%Y")
-                    version_text = f"Installiert am: {dt}"
+                    version_text = T["update_installed_date"].format(date=dt)
             except (FileNotFoundError, json.JSONDecodeError, OSError):
                 pass
 
@@ -1114,7 +1109,7 @@ class AnkiSetupWizard(QDialog):
                 self._update_mod_before[str(code)] = 0
 
         self._update_log.clear()
-        self._update_log.append("⏳  Prüfe auf Updates…")
+        self._update_log.append(T["update_checking"])
         self._update_check_btn.setEnabled(False)
 
         download_addons(
@@ -1138,25 +1133,23 @@ class AnkiSetupWizard(QDialog):
                     old_mod = self._update_mod_before.get(code, 0)
                     if new_mod > old_mod:
                         dt = datetime.datetime.fromtimestamp(new_mod).strftime("%d.%m.%Y")
-                        self._update_log.append(f"✅  Update installiert  (Stand: {dt})")
-                        self._update_version_lbl.setText(f"Installiert am: {dt}")
+                        self._update_log.append(T["update_log_updated"].format(date=dt))
+                        self._update_version_lbl.setText(T["update_installed_date"].format(date=dt))
                         any_updated = True
                     else:
-                        self._update_log.append("✅  Bereits auf dem neuesten Stand")
+                        self._update_log.append(T["update_log_current"])
                 except (FileNotFoundError, json.JSONDecodeError, OSError):
-                    self._update_log.append("✅  Download abgeschlossen")
+                    self._update_log.append(T["update_log_downloaded"])
             else:
                 errmsg = (
                     getattr(result, "errmsg", None)
                     or getattr(result, "exception", None)
                     or str(result)
                 )
-                self._update_log.append(f"❌  Fehler: {errmsg}")
+                self._update_log.append(T["update_log_error"].format(errmsg=errmsg))
 
         if any_updated:
-            self._update_log.append(
-                "\n⚠️  Starte Anki neu, damit das Update aktiv wird."
-            )
+            self._update_log.append(T["update_log_restart"])
 
     # -----------------------------------------------------------------------
     # Installation – phase 1: basics (automatic after town selection)
@@ -1196,9 +1189,9 @@ class AnkiSetupWizard(QDialog):
                     codes_to_download.append(int(code))
                     needs_dl = True
             if needs_dl:
-                self._install_log.append(f"⏳  {icon} {name}  –  wird heruntergeladen…")
+                self._install_log.append(T["install_log_downloading"].format(icon=icon, name=name))
             else:
-                self._install_log.append(f"ℹ️   {icon} {name}  –  bereits installiert")
+                self._install_log.append(T["install_log_already"].format(icon=icon, name=name))
                 self._install_results[addon_id] = True
 
         total = len(codes_to_download)
@@ -1207,7 +1200,9 @@ class AnkiSetupWizard(QDialog):
             # callback so we can't track real progress.
             self._install_progress.setMinimum(0)
             self._install_progress.setMaximum(0)
-            self._install_status_lbl.setText(f"<b>Lade {total} Paket(e) herunter…</b>")
+            self._install_status_lbl.setText(
+                f"<b>{T['install_status_downloading'].format(count=total)}</b>"
+            )
             download_addons(
                 parent=self,
                 mgr=mw.addonManager,
@@ -1217,7 +1212,7 @@ class AnkiSetupWizard(QDialog):
         else:
             self._install_progress.setMaximum(1)
             self._install_progress.setValue(1)
-            self._install_status_lbl.setText("<b>Nichts zu installieren.</b>")
+            self._install_status_lbl.setText(f"<b>{T['install_status_nothing']}</b>")
             self._finish_install()
 
     def _on_downloads_done(self, log: list) -> None:
@@ -1230,7 +1225,7 @@ class AnkiSetupWizard(QDialog):
             icon = addon.get("icon", "📦")
 
             if isinstance(result, InstallOk):
-                self._install_log.append(f"   ✅  {icon} {name}  –  installiert")
+                self._install_log.append(T["install_log_ok"].format(icon=icon, name=name))
                 if addon_id:
                     self._install_results[addon_id] = True
                     self._newly_installed_ids.append(addon_id)
@@ -1240,16 +1235,15 @@ class AnkiSetupWizard(QDialog):
                     or getattr(result, "exception", None)
                     or str(result)
                 )
-                self._install_log.append(f"   ❌  {icon} {name}  –  Fehler: {errmsg}")
+                self._install_log.append(T["install_log_error"].format(icon=icon, name=name, errmsg=errmsg))
                 if addon_id:
                     self._install_results[addon_id] = False
 
         ok = sum(1 for v in self._install_results.values() if v)
         fail = len(self._install_results) - ok
+        fail_part = T["install_status_done_errors"].format(fail=fail) if fail else ""
         self._install_status_lbl.setText(
-            f"<b>Fertig: {ok} installiert"
-            + (f", {fail} Fehler" if fail else "")
-            + "</b>"
+            f"<b>{T['install_status_done_ok'].format(ok=ok)}{fail_part}</b>"
         )
         self._finish_install()
 
@@ -1359,9 +1353,11 @@ class AnkiSetupWizard(QDialog):
         )
 
         self._steps_addon_lbl.setText(f"{addon.get('icon', '')}  {addon['name']}")
-        progress = f"Schritt {pos_in_addon} / {len(addon_steps)}"
+        progress = T["steps_progress"].format(pos=pos_in_addon, total=len(addon_steps))
         if len(addon_steps) != len(self._step_queue):
-            progress += f"  •  Gesamt {self._step_idx + 1} / {len(self._step_queue)}"
+            progress += T["steps_progress_overall"].format(
+                current=self._step_idx + 1, total=len(self._step_queue)
+            )
         self._steps_progress_lbl.setText(progress)
         self._steps_title_lbl.setText(step["title"])
         self._steps_desc.setPlainText(step.get("description", ""))
@@ -1379,7 +1375,7 @@ class AnkiSetupWizard(QDialog):
             url = step.get("button_url")
             self._current_step_url = url
             if url:
-                self._steps_url_btn.setText(step.get("button_label", "Link öffnen"))
+                self._steps_url_btn.setText(step.get("button_label", T["steps_url_btn_default"]))
                 self._steps_url_btn.show()
             else:
                 self._steps_url_btn.hide()
@@ -1390,7 +1386,7 @@ class AnkiSetupWizard(QDialog):
             url = step.get("button_url")
             self._current_step_url = url
             if url:
-                self._steps_url_btn.setText(step.get("button_label", "Link öffnen"))
+                self._steps_url_btn.setText(step.get("button_label", T["steps_url_btn_default"]))
                 self._steps_url_btn.show()
             else:
                 self._steps_url_btn.hide()
@@ -1406,9 +1402,7 @@ class AnkiSetupWizard(QDialog):
         _, step = self._step_queue[self._step_idx]
         mod = sys.modules.get(step.get("login_module", ""))
         if not mod:
-            self._steps_login_status.setText(
-                "⚠️  Add-on noch nicht geladen – starte Anki neu."
-            )
+            self._steps_login_status.setText(T["msg_addon_not_loaded_nav"])
             self._steps_login_status.setStyleSheet("color:#e67e22;font-size:12px;padding:2px 0;")
             self._steps_login_status.show()
             return
@@ -1425,10 +1419,10 @@ class AnkiSetupWizard(QDialog):
         if logged_in:
             self._current_step_logged_in = True
             self._update_nav()
-            self._steps_login_status.setText("✅  Angemeldet!")
+            self._steps_login_status.setText(T["msg_logged_in"])
             self._steps_login_status.setStyleSheet("color:#27ae60;font-size:12px;padding:2px 0;")
         else:
-            self._steps_login_status.setText("Noch nicht angemeldet.")
+            self._steps_login_status.setText(T["msg_not_logged_in"])
             self._steps_login_status.setStyleSheet("color:#7f8c8d;font-size:12px;padding:2px 0;")
         self._steps_login_status.show()
 
@@ -1471,10 +1465,8 @@ class AnkiSetupWizard(QDialog):
         ]
         parts: List[str] = []
         if installed:
-            parts.append(f"<b>Installiert:</b> {', '.join(installed)}")
+            parts.append(T["done_installed"].format(names=", ".join(installed)))
         if failed:
-            parts.append(
-                f"<span style='color:#c0392b;'><b>Fehler bei:</b> {', '.join(failed)}</span>"
-            )
+            parts.append(T["done_failed"].format(names=", ".join(failed)))
         self._done_summary_lbl.setText("<br>".join(parts))
         self._go_to(PAGE_DONE)

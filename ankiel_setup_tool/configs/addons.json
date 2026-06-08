@@ -157,7 +157,7 @@
         "login_dialog_class": "LoginDialog",
         "auth_module": "1957538407.auth_manager",
         "is_logged_in_attr": "auth_manager.is_logged_in",
-        "note": "Noch kein Konto? ankicollab.com/Login → 'Sign Up'"
+        "note": "Noch kein Konto? ankicollab.com/signup → 'Sign Up'"
       },
       "setup_steps": [
         {
@@ -171,7 +171,7 @@
           "title": "Account erstellen & einloggen",
           "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.",
           "skip_if_logged_in": true,
-          "button_label": "ankicollab.com/signup Website",
+          "button_label": "AnkiCollab Signup Website",
           "button_url": "https://ankicollab.com/signup",
           "login_module": "1957538407.dialogs",
           "login_dialog_class": "LoginDialog",
