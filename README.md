@@ -1,5 +1,83 @@
 # AnKiel Setup Tool
 
+Anki-Einrichtungsassistent für Medizinstudierende. Installiert und konfiguriert die richtigen Add-ons für deine Universität.
+
+> English version below / [Englische Version weiter unten](#ankiel-setup-tool-1)
+
+---
+
+## Funktionen
+
+- **Universitätsbasierte Einrichtung** — wählt und installiert automatisch die passenden Add-ons für deinen Standort
+- **Geführter Installationsassistent** — Schritt-für-Schritt-Anleitung für jedes Add-on, einschließlich Login-Flows für AMBOSS, AnkiCollab u. a.
+- **Übersichtsseite** — alle installierten Add-ons an einem Ort verwalten: Einrichtung erneut starten, Updates prüfen, deinstallieren
+- **Automatischer Start beim ersten Start** — öffnet sich automatisch, wenn es das einzige installierte Add-on ist
+- **Neustart-Flow** — löst einen sauberen Anki-Neustart nach der Installation aus und setzt dort fort, wo aufgehört wurde
+
+### Unterstützte Add-ons
+
+Die folgenden Add-ons werden aktuell unterstützt. Weitere werden mit der Zeit hinzugefügt.
+
+- [Ankizin](https://www.ankizin.de)
+- [AMBOSS](https://www.amboss.com)
+- [AnkiCollab](https://www.ankicollab.com)
+- [AnkiHub](https://www.ankihub.net)
+- [Meditricks](https://www.meditricks.de/anki/)
+- [Image Occlusion Enhanced](https://ankiweb.net/shared/info/1374772155)
+- [Review Heatmap](https://ankiweb.net/shared/info/1771074083)
+- [AnkiConnect](https://ankiweb.net/shared/info/2055492159)
+
+---
+
+## Installation
+
+### Aus einer Release-Datei (empfohlen)
+
+1. `ankiel_setup_tool.ankiaddon` vom [neuesten Release](../../releases/latest) herunterladen.
+2. In Anki: **Extras → Erweiterungen → Aus Datei installieren...** → heruntergeladene Datei auswählen.
+3. Anki neu starten. Das Tool öffnet sich automatisch.
+
+### Manuell (aus dem Quellcode)
+
+```bash
+git clone https://github.com/lennovative/ankiel_addon.git
+cp -r ankiel_addon/ankiel_setup_tool ~/.local/share/Anki2/addons21/
+```
+
+Anki neu starten.
+
+---
+
+## Voraussetzungen
+
+- Anki **2.1.49** oder neuer (Qt 6 / PyQt6)
+- Getestet unter Linux. macOS und Windows sollten auch funktionieren.
+
+---
+
+## Universität hinzufügen
+
+Datei `ankiel_setup_tool/configs/<id>.json` erstellen:
+
+```json
+{
+  "id": "your_uni",
+  "name": "Your University",
+  "description": "Short description shown in the list",
+  "icon": "🎓",
+  "basic_addons": ["ankizin", "amboss"],
+  "optional_addons": ["ankihub", "ankicollab", "image_occlusion", "review_heatmap", "ankiconnect", "meditricks"]
+}
+```
+
+Die Datei wird automatisch erkannt — keine Code-Änderungen nötig. `basic_addons` werden nach Auswahl der Universität automatisch installiert; `optional_addons` werden auf der Übersichtsseite angeboten.
+
+
+---
+---
+
+# AnKiel Setup Tool
+
 Anki setup wizard for medical students. Installs and configures the right add-ons for your university in one go.
 
 ---
@@ -69,8 +147,6 @@ Create a file `ankiel_setup_tool/configs/<id>.json`:
 ```
 
 The file is picked up automatically — no code changes needed. `basic_addons` are installed automatically after the university is selected; `optional_addons` are offered on the overview page.
-
-Pull requests for additional universities are welcome.
 
 ---
 
