@@ -15,6 +15,7 @@ from aqt import gui_hooks, mw
 from aqt.qt import QAction, QDialog, QMessageBox, QTimer
 
 _REOPEN_FLAG = os.path.join(os.path.dirname(__file__), ".reopen_wizard")
+_FIRST_RUN_FLAG = os.path.join(os.path.dirname(__file__), ".first_run_done")
 
 # ---------------------------------------------------------------------------
 # Startup popup suppression
@@ -126,6 +127,17 @@ def _is_only_addon() -> bool:
     return len(others) == 0
 
 
+def _is_first_run() -> bool:
+    return not os.path.exists(_FIRST_RUN_FLAG)
+
+
+def _mark_first_run_done() -> None:
+    try:
+        open(_FIRST_RUN_FLAG, "w").close()
+    except OSError:
+        pass
+
+
 def _register_menu() -> None:
     action = QAction("AnKiel Setup Tool", mw)
     action.triggered.connect(_show_wizard)
@@ -137,6 +149,9 @@ def _register_menu() -> None:
         except OSError:
             pass
         _show_wizard(post_restart=True)
+    elif _is_first_run():
+        _mark_first_run_done()
+        _show_wizard()
     elif _is_only_addon():
         _show_wizard()
 
