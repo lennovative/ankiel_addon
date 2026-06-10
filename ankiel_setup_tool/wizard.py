@@ -18,7 +18,7 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from aqt import mw
-from aqt.addons import InstallOk, download_addons
+from aqt.addons import InstallOk, download_addons, fetch_update_info
 from aqt.qt import (
     QCheckBox,
     QDesktopServices,
@@ -1306,9 +1306,8 @@ class AnkiSetupWizard(QDialog):
 
     def _check_for_updates(self) -> None:
         addon = ADDON_CATALOG.get(self._update_addon_id, {})
-        codes = addon.get("addon_codes", [])
+        codes = [int(c) for c in addon.get("addon_codes", [])]
 
-        # Record current mod times so we can detect a real update afterward
         self._update_mod_before = {}
         for code in codes:
             meta_path = os.path.join(self._addons_folder, str(code), "meta.json")
@@ -1322,17 +1321,44 @@ class AnkiSetupWizard(QDialog):
         self._update_log.append(T["update_checking"])
         self._update_check_btn.setEnabled(False)
 
-        download_addons(
-            parent=self,
-            mgr=mw.addonManager,
-            ids=[int(c) for c in codes],
-            on_done=self._on_update_check_done,
-        )
+        def fetch() -> list:
+            return fetch_update_info(list(codes))
 
-    def _on_update_check_done(self, log: list) -> None:
-        self._update_check_btn.setEnabled(True)
+        def on_info_received(future) -> None:
+            try:
+                items = future.result()
+            except Exception as exc:
+                self._update_log.clear()
+                self._update_log.append(T["update_log_error"].format(errmsg=str(exc)))
+                self._finish_update_check(any_updated=False)
+                return
+
+            outdated_ids = []
+            for item in items:
+                local_mod = self._update_mod_before.get(str(item.id), 0)
+                if item.modified > local_mod:
+                    outdated_ids.append(item.id)
+                    old_date = datetime.datetime.fromtimestamp(local_mod).strftime("%d.%m.%Y") if local_mod else "?"
+                    new_date = datetime.datetime.fromtimestamp(item.modified).strftime("%d.%m.%Y") if item.modified else "?"
+                    self._update_log.append(T["update_log_update_found"].format(old_date=old_date, new_date=new_date))
+                else:
+                    date = datetime.datetime.fromtimestamp(local_mod).strftime("%d.%m.%Y") if local_mod else "?"
+                    self._update_log.append(T["update_log_current"].format(date=date))
+
+            if outdated_ids:
+                download_addons(
+                    parent=self,
+                    mgr=mw.addonManager,
+                    ids=outdated_ids,
+                    on_done=self._on_update_download_done,
+                )
+            else:
+                self._finish_update_check(any_updated=False)
+
+        mw.taskman.run_in_background(fetch, on_info_received)
+
+    def _on_update_download_done(self, log: list) -> None:
         any_updated = False
-
         for entry_id, result in log:
             code = str(entry_id)
             if isinstance(result, InstallOk):
@@ -1340,16 +1366,13 @@ class AnkiSetupWizard(QDialog):
                 try:
                     with open(meta_path, encoding="utf-8") as f:
                         new_mod = json.load(f).get("mod", 0)
-                    old_mod = self._update_mod_before.get(code, 0)
-                    if new_mod > old_mod:
-                        dt = datetime.datetime.fromtimestamp(new_mod).strftime("%d.%m.%Y")
-                        self._update_log.append(T["update_log_updated"].format(date=dt))
-                        self._update_version_lbl.setText(T["update_installed_date"].format(date=dt))
-                        any_updated = True
-                    else:
-                        self._update_log.append(T["update_log_current"])
+                    dt = datetime.datetime.fromtimestamp(new_mod).strftime("%d.%m.%Y")
+                    self._update_log.append(T["update_log_updated"].format(date=dt))
+                    self._update_version_lbl.setText(T["update_installed_date"].format(date=dt))
+                    any_updated = True
                 except (FileNotFoundError, json.JSONDecodeError, OSError):
                     self._update_log.append(T["update_log_downloaded"])
+                    any_updated = True
             else:
                 errmsg = (
                     getattr(result, "errmsg", None)
@@ -1358,14 +1381,15 @@ class AnkiSetupWizard(QDialog):
                 )
                 self._update_log.append(T["update_log_error"].format(errmsg=errmsg))
 
+        self._finish_update_check(any_updated=any_updated)
+
+    def _finish_update_check(self, any_updated: bool) -> None:
+        self._update_check_btn.setEnabled(True)
         if any_updated:
             self._update_log.append(T["update_log_restart"])
-
-        # Record the check time
         self._save_update_check(self._update_addon_id)
         now_str = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
         self._update_last_checked_lbl.setText(T["update_last_checked"].format(date=now_str))
-
         if any_updated:
             self._save_install_date(self._update_addon_id)
             self._update_install_date_lbl.setText(
