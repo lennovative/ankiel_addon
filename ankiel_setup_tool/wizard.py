@@ -369,15 +369,12 @@ class _AddonCard(QFrame):
             name_row.addWidget(b2)
 
         if login_type == "external":
-            login_note = addon_data.get("login", {}).get("note", "")
             b3 = QLabel(T["badge_external_login"])
             b3.setStyleSheet(
                 "background:#333a44;color:#8090a0;padding:2px 7px;border-radius:9px;font-size:10px;"
                 if _is_dark() else
                 "background:#eaecee;color:#566573;padding:2px 7px;border-radius:9px;font-size:10px;"
             )
-            if login_note:
-                b3.setToolTip(login_note)
             name_row.addWidget(b3)
         elif login_type == "logged_in":
             b3 = QLabel(T["badge_logged_in"])
@@ -838,11 +835,7 @@ class AnkiSetupWizard(QDialog):
 
     def _make_setup_callback(self, addon_id: str, addon_data: dict):
         """Return a callback for the Anleitung button, or None if no steps exist."""
-        has_steps = any(
-            s.get("type") == "instruction"
-            for s in addon_data.get("setup_steps", [])
-        )
-        if not has_steps:
+        if not addon_data.get("setup_steps"):
             return None
         def _cb(_checked=False, _aid=addon_id):
             self._run_setup_for_addon(_aid)
@@ -893,13 +886,8 @@ class AnkiSetupWizard(QDialog):
 
     def _make_login_callback(self, _addon_id: str, addon_data: dict):
         """Return (card_login_type, callback) or (None, None) if no login spec."""
-        login = addon_data.get("login", {})
-        login_type = login.get("type")
-        if not login_type:
-            return None, None
-        if login_type == "external":
-            return "external", None
-        elif login_type == "native":
+        login = addon_data.get("login")
+        if login:
             logged_in = self._check_is_logged_in(
                 login.get("auth_module", ""),
                 login.get("is_logged_in_attr", ""),
@@ -909,17 +897,16 @@ class AnkiSetupWizard(QDialog):
             def _cb_native(_checked=False, _aid=_addon_id):
                 self._open_login_page(_aid)
             return "native", _cb_native
-        elif login_type == "browser":
-            url = login.get("url", "")
-            def _cb_browser(_checked=False, _url=url):
-                QDesktopServices.openUrl(QUrl(_url))
-            return "browser", _cb_browser
+        elif addon_data.get("requires_account"):
+            return "external", None
         return None, None
 
     def _open_native_login_for_card(self, addon_data: dict) -> None:
         """Open the addon's own login dialog and refresh the overview afterward."""
         import sys
-        login = addon_data.get("login", {})
+        login = addon_data.get("login")
+        if not login:
+            return
         mod = sys.modules.get(login.get("login_module", ""))
         if not mod:
             tooltip(T["msg_addon_not_loaded"])
@@ -939,18 +926,13 @@ class AnkiSetupWizard(QDialog):
     def _open_login_page(self, addon_id: str) -> None:
         """Show the login step as a wizard page (same layout as setup steps)."""
         addon = ADDON_CATALOG.get(addon_id, {})
-        login_step = next(
-            (s for s in addon.get("setup_steps", []) if s.get("type") == "login"),
-            None,
-        )
-        if not login_step:
-            # Fallback: open native dialog directly
+        login = addon.get("login")
+        if not login:
             self._open_native_login_for_card(addon)
             return
-        # Show without auto-skip so the user always sees the login page
         self._is_standalone_nav = True
         self._setup_mode = "manual"
-        self._step_queue = [(addon_id, {**login_step, "skip_if_logged_in": False})]
+        self._step_queue = [(addon_id, {**login, "_is_login": True, "skip_if_logged_in": False})]
         self._step_idx = -1
         self._advance_step()
 
@@ -1512,15 +1494,15 @@ class AnkiSetupWizard(QDialog):
             if aid in added_login:
                 continue
             addon = ADDON_CATALOG.get(aid, {})
-            for step in addon.get("setup_steps", []):
-                if step.get("type") != "login":
-                    continue
-                if self._check_is_logged_in(
-                    step.get("auth_module", ""), step.get("is_logged_in_attr", "")
-                ):
-                    continue
-                self._step_queue.append((aid, {**step, "skip_if_logged_in": False}))
-                added_login.add(aid)
+            login = addon.get("login")
+            if not login:
+                continue
+            if self._check_is_logged_in(
+                login.get("auth_module", ""), login.get("is_logged_in_attr", "")
+            ):
+                continue
+            self._step_queue.append((aid, {**login, "_is_login": True, "skip_if_logged_in": False}))
+            added_login.add(aid)
         self._step_idx = -1
         if self._step_queue:
             self._advance_step()
@@ -1538,15 +1520,15 @@ class AnkiSetupWizard(QDialog):
             if aid in added_login or aid in self._newly_installed_ids:
                 continue
             addon = ADDON_CATALOG.get(aid, {})
-            for step in addon.get("setup_steps", []):
-                if step.get("type") != "login":
-                    continue
-                if self._check_is_logged_in(
-                    step.get("auth_module", ""), step.get("is_logged_in_attr", "")
-                ):
-                    continue
-                self._step_queue.append((aid, {**step, "skip_if_logged_in": False}))
-                added_login.add(aid)
+            login = addon.get("login")
+            if not login:
+                continue
+            if self._check_is_logged_in(
+                login.get("auth_module", ""), login.get("is_logged_in_attr", "")
+            ):
+                continue
+            self._step_queue.append((aid, {**login, "_is_login": True, "skip_if_logged_in": False}))
+            added_login.add(aid)
 
         self._step_idx = -1
         if self._step_queue:
@@ -1560,10 +1542,7 @@ class AnkiSetupWizard(QDialog):
         """Run the instruction steps for one addon (manual re-run from Setup button)."""
         self._is_standalone_nav = False
         addon = ADDON_CATALOG.get(addon_id, {})
-        steps = [
-            step for step in addon.get("setup_steps", [])
-            if step.get("type") == "instruction"
-        ]
+        steps = addon.get("setup_steps", [])
         if not steps:
             return
         self._setup_mode = "manual"
@@ -1609,7 +1588,7 @@ class AnkiSetupWizard(QDialog):
         self._steps_title_lbl.setText(step["title"])
         self._steps_desc.setPlainText(step.get("description", ""))
 
-        if step.get("type") == "login":
+        if step.get("_is_login"):
             # Auto-skip if already logged in
             if step.get("skip_if_logged_in") and self._check_is_logged_in(
                 step.get("auth_module", ""), step.get("is_logged_in_attr", "")

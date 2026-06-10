@@ -12,14 +12,12 @@
       "external_url": "https://www.ankizin.de",
       "setup_steps": [
         {
-          "type": "instruction",
           "title": "Ankizin Deck herunterladen",
           "description": "1. Besuche die Ankizin-Website (Button unten).\n2. Lade das aktuelle Deck herunter (.apkg-Datei).\n3. Öffne die Datei → Anki importiert Deck + Notiztypen automatisch.\n   (alternativ: Datei → Importieren, Strg+Shift+I)",
           "button_label": "Ankizin Website öffnen",
           "button_url": "https://www.ankizin.de/wiki/ankizin-deck-installieren/"
         },
         {
-          "type": "instruction",
           "title": "Karten aussetzen & Datenbank prüfen",
           "description": "Nach dem Import:\n\n1. Öffne den Karten-Browser (B oder Strg+B).\n2. Suche nach:  #Ankizin_v5\n3. Alle auswählen (Strg+A) → Rechtsklick → Aussetzen.\n4. Suche nach:  !DELETE  → alle auswählen → Löschen.\n5. Werkzeuge → Leere Karten löschen → Bestätigen.\n6. Werkzeuge → Datenbank überprüfen → Bestätigen.\n\nDanach aktivierst du Themen gezielt über Tags (z. B. nach Lernplan-Tag)."
         }
@@ -30,26 +28,20 @@
       "id": "ankihub",
       "name": "AnkiHub",
       "subtitle": "Kollaborative Deck-Updates",
-      "description": "AnkiHub hält deine Decks automatisch aktuell und ermöglicht gemeinschaftliche Karten-Verbesserungen. Wird für viele Community-Decks (z. B. Ankizin) benötigt.",
+      "description": "AnkiHub hält deine Decks automatisch aktuell und ermöglicht gemeinschaftliche Karten-Verbesserungen. Wird für manche Community-Decks benötigt.",
       "category": "deck_platforms",
       "icon": "🔄",
       "addon_codes": ["1322529746"],
       "requires_account": true,
       "external_url": "https://www.ankihub.net",
-      "login": {
-        "type": "external",
-        "note": "Login über Anki."
-      },
       "setup_steps": [
         {
-          "type": "instruction",
           "title": "AnkiHub Account erstellen",
           "description": "1. Besuche app.ankihub.net/accounts/signup/ (Button unten).\n2. Erstelle einen kostenlosen Account.\n3. Beantrage eine kostenlose Scholarship:\n   app.ankihub.net/scholarship-requirement/\n   (Du kannst 0 € eingeben. Freigabe dauert 24–48 h.)",
           "button_label": "AnkiHub Registrierung öffnen",
           "button_url": "https://app.ankihub.net/accounts/signup/"
         },
         {
-          "type": "instruction",
           "title": "In AnkiHub einloggen",
           "description": "Nach dem Neustart von Anki:\n\n1. Das AnkiHub-Fenster öffnet sich automatisch.\n2. Logge dich mit deinen AnkiHub-Zugangsdaten ein.\n3. Abonniere gewünschte Decks über das AnkiHub-Menü\n   in der Werkzeuge-Leiste."
         }
@@ -67,28 +59,18 @@
       "requires_account": true,
       "external_url": "https://www.amboss.com",
       "login": {
-        "type": "native",
+        "title": "Bei AMBOSS anmelden",
+        "description": "Melde dich mit deinen AMBOSS-Zugangsdaten an.\n\nNoch kein Konto? Registriere dich auf der AMBOSS-Website (Button unten).",
+        "skip_if_logged_in": true,
+        "button_label": "AMBOSS Website",
+        "button_url": "https://www.amboss.com",
         "login_module": "1044112126.addon",
         "login_dialog_class": "auth_dialog",
         "login_method": "show_login",
         "auth_module": "1044112126.addon",
         "is_logged_in_attr": "user_service.is_logged_in"
       },
-      "setup_steps": [
-        {
-          "type": "login",
-          "title": "Bei AMBOSS anmelden",
-          "description": "Melde dich mit deinen AMBOSS-Zugangsdaten an.\n\nNoch kein Konto? Registriere dich auf der AMBOSS-Website (Button unten).",
-          "skip_if_logged_in": true,
-          "button_label": "AMBOSS Website",
-          "button_url": "https://www.amboss.com",
-          "login_module": "1044112126.addon",
-          "login_dialog_class": "auth_dialog",
-          "login_method": "show_login",
-          "auth_module": "1044112126.addon",
-          "is_logged_in_attr": "user_service.is_logged_in"
-        }
-      ]
+      "setup_steps": []
     },
 
     "meditricks": {
@@ -101,13 +83,8 @@
       "addon_codes": ["1110557695"],
       "requires_account": true,
       "external_url": "https://www.meditricks.de/anki/",
-      "login": {
-        "type": "external",
-        "note": "Login über Anki."
-      },
       "setup_steps": [
         {
-          "type": "instruction",
           "title": "Meditricks-Account verknüpfen",
           "description": "Nach dem Neustart:\n\n1. Gehe zu Werkzeuge → Meditricks.\n2. Logge dich mit deinen Meditricks-Zugangsdaten ein.\n3. Die Eselsbrücken erscheinen automatisch in kompatiblen\n   Ankizin-Karten während des Lernens.",
           "button_label": "Meditricks Website",
@@ -127,7 +104,11 @@
       "requires_account": true,
       "external_url": "https://www.ankicollab.com",
       "login": {
-        "type": "native",
+        "title": "Account erstellen & einloggen",
+        "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.",
+        "skip_if_logged_in": true,
+        "button_label": "AnkiCollab Signup Website",
+        "button_url": "https://ankicollab.com/signup",
         "login_module": "1957538407.dialogs",
         "login_dialog_class": "LoginDialog",
         "auth_module": "1957538407.auth_manager",
@@ -139,19 +120,6 @@
       },
       "setup_steps": [
         {
-          "type": "login",
-          "title": "Account erstellen & einloggen",
-          "description": "Noch kein Konto? Öffne die Website (Button unten), klicke auf 'Sign Up Here' und bestätige deine E-Mail.\n\nDanach: 'Login-Fenster öffnen' und mit deinen Zugangsdaten anmelden.",
-          "skip_if_logged_in": true,
-          "button_label": "AnkiCollab Signup Website",
-          "button_url": "https://ankicollab.com/signup",
-          "login_module": "1957538407.dialogs",
-          "login_dialog_class": "LoginDialog",
-          "auth_module": "1957538407.auth_manager",
-          "is_logged_in_attr": "auth_manager.is_logged_in"
-        },
-        {
-          "type": "instruction",
           "title": "Deck abonnieren",
           "description": "1. Besuche ankicollab.com/Decks (Button unten).\n2. Suche nach dem gewünschten Deck.\n3. Klicke auf den Deck-Namen und kopiere den\n   Subscription Key (blauer Text oben).\n4. In Anki: AnkiCollab → Edit Subscriptions\n   → Key einfügen → 'Add Subscription'.\n\nTipp: Aktiviere 'Update Decks on startup' für\nautomatische Updates.",
           "button_label": "Decks durchsuchen",
@@ -198,7 +166,6 @@
       "external_url": "https://ankiweb.net/shared/info/2055492159",
       "setup_steps": [
         {
-          "type": "instruction",
           "title": "AnkiConnect läuft automatisch",
           "description": "Nach dem Neustart läuft AnkiConnect automatisch\nals lokaler Server auf localhost:8765.\n\nKeine weitere Konfiguration notwendig.\nEinstellungen: Werkzeuge → Add-ons → AnkiConnect\n→ Konfiguration (z. B. erlaubte Herkunftsdomains)."
         }
