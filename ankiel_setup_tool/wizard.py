@@ -24,6 +24,7 @@ from aqt.qt import (
     QDesktopServices,
     QDialog,
     QFrame,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -42,7 +43,7 @@ from aqt.utils import tooltip
 
 from .addon_defs import ADDON_CATALOG, CATEGORIES
 from .config_loader import list_towns, load_state, save_state
-from .installer import is_addon_installed
+from .installer import is_addon_disabled, is_addon_installed
 from .locales import T
 
 # ---------------------------------------------------------------------------
@@ -272,6 +273,7 @@ class _AddonCard(QFrame):
         addon_data: dict,
         addons_folder: str,
         read_only: bool = False,
+        disabled: bool = False,
         on_check_changed=None,
         on_setup=None,
         on_uninstall=None,
@@ -380,6 +382,15 @@ class _AddonCard(QFrame):
             b3.setStyleSheet(_badge_installed)
             name_row.addWidget(b3)
 
+        if disabled:
+            b_dis = QLabel(T["badge_disabled"])
+            b_dis.setStyleSheet(
+                "background:#5a2020;color:#ff8080;padding:2px 7px;border-radius:9px;font-size:10px;"
+                if _is_dark() else
+                "background:#fdecea;color:#c0392b;padding:2px 7px;border-radius:9px;font-size:10px;"
+            )
+            name_row.addWidget(b_dis)
+
         name_row.addStretch()
 
         external_url = addon_data.get("external_url", "")
@@ -427,6 +438,10 @@ class _AddonCard(QFrame):
         row.addLayout(txt, stretch=1)
 
         # Right column: buttons
+        if disabled:
+            on_login = None
+            on_update = None
+            on_setup = None
         if on_setup or on_uninstall or on_update or on_login:
             btns = QVBoxLayout()
             btns.setSpacing(4)
@@ -458,6 +473,13 @@ class _AddonCard(QFrame):
                 btns.addWidget(uninstall_btn)
             btns.addStretch()
             row.addLayout(btns)
+
+        if disabled:
+            effect = QGraphicsOpacityEffect(self)
+            effect.setOpacity(0.45)
+            self.setGraphicsEffect(effect)
+            _tip = T["tooltip_addon_disabled"]
+            self.setToolTip(_tip)
 
     def mousePressEvent(self, event) -> None:  # type: ignore[override]
         if self._read_only:
@@ -745,10 +767,15 @@ class AnkiSetupWizard(QDialog):
                 addon_data = ADDON_CATALOG.get(aid)
                 if not addon_data:
                     continue
+                addon_disabled = any(
+                    is_addon_disabled(str(c), self._addons_folder)
+                    for c in addon_data.get("addon_codes", [])
+                )
                 login_type, on_login = self._make_login_callback(aid, addon_data)
                 card = _AddonCard(
                     addon_data, self._addons_folder,
                     read_only=True,
+                    disabled=addon_disabled,
                     on_setup=self._make_setup_callback(aid, addon_data),
                     on_update=self._make_update_callback(aid),
                     login_type=login_type,
@@ -785,11 +812,16 @@ class AnkiSetupWizard(QDialog):
                         is_addon_installed(str(c), self._addons_folder)
                         for c in addon_data.get("addon_codes", [])
                     )
+                    addon_disabled = already and any(
+                        is_addon_disabled(str(c), self._addons_folder)
+                        for c in addon_data.get("addon_codes", [])
+                    )
                     on_uninstall = self._make_uninstall_callback(aid) if already else None
                     login_type, on_login = self._make_login_callback(aid, addon_data) if already else (None, None)
                     card = _AddonCard(
                         addon_data, self._addons_folder,
                         read_only=already,
+                        disabled=addon_disabled,
                         on_check_changed=self._update_install_btn,
                         on_setup=self._make_setup_callback(aid, addon_data) if already else None,
                         on_update=self._make_update_callback(aid) if already else None,

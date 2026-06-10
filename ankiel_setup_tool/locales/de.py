@@ -37,6 +37,7 @@ STRINGS = {
 
     # Addon card — badges
     "badge_installed": "✓ Installiert",
+    "badge_disabled": "⚠ Deaktiviert",
     "badge_account_needed": "Account nötig",
     "badge_external_login": "Externer Login",
     "badge_logged_in": "✓ Angemeldet",
@@ -81,6 +82,11 @@ STRINGS = {
     "nav_install": "Installieren →",
 
     # Messages / tooltips
+    "tooltip_addon_disabled": (
+        "Dieses Add-on ist in Anki deaktiviert.\n"
+        "Zum Reaktivieren: Extras → Erweiterungen →\n"
+        "Aktivieren/Deaktivieren → Anki neu starten."
+    ),
     "msg_select_uni": "Bitte wähle eine Hochschule aus.",
     "msg_confirm_uninstall": "Möchtest du '{name}' wirklich deinstallieren?",
     "msg_addon_not_loaded": "Das Add-on ist noch nicht geladen. Starte Anki neu.",
