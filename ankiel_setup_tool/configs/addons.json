@@ -5,7 +5,7 @@
       "name": "Ankizin",
       "subtitle": "Medizinkarten für das deutsche Studium",
       "description": "Umfassendes Kartenset auf Basis der AMBOSS-Bibliothek und des 100-Tage-Lernplans. Enthält eigene Notiztypen und einen integrierten Lernplan-Manager.",
-      "category": "basics",
+      "category": "learning",
       "icon": "🏥",
       "addon_codes": ["2058530482"],
       "requires_account": false,
@@ -31,7 +31,7 @@
       "name": "AnkiHub",
       "subtitle": "Kollaborative Deck-Updates",
       "description": "AnkiHub hält deine Decks automatisch aktuell und ermöglicht gemeinschaftliche Karten-Verbesserungen. Wird für viele Community-Decks (z. B. Ankizin) benötigt.",
-      "category": "collaboration",
+      "category": "deck_platforms",
       "icon": "🔄",
       "addon_codes": ["1322529746"],
       "requires_account": true,
@@ -61,7 +61,7 @@
       "name": "AMBOSS",
       "subtitle": "Medizinische Referenz direkt in Anki",
       "description": "Hover über Fachbegriffe in deinen Karten und erhalte sofort Erklärungen aus der AMBOSS-Bibliothek. Erfordert einen AMBOSS-Account (kostenpflichtig oder Unizugang).",
-      "category": "basics",
+      "category": "learning",
       "icon": "📚",
       "addon_codes": ["1044112126"],
       "requires_account": true,
@@ -96,7 +96,7 @@
       "name": "Meditricks",
       "subtitle": "Eselsbrücken-Videos direkt in Anki",
       "description": "Zeigt passende Meditricks-Gedächtnisstützen direkt in deinen Anki-Karten an. Perfekt in Kombination mit dem Ankizin-Deck. Erfordert einen Meditricks-Account.",
-      "category": "others",
+      "category": "learning",
       "icon": "🧠",
       "addon_codes": ["1110557695"],
       "requires_account": true,
@@ -121,7 +121,7 @@
       "name": "AnkiCollab",
       "subtitle": "Kollaborative Deck-Plattform",
       "description": "Abonniere und verbessere Anki-Decks gemeinsam mit anderen. Ideal für uni-spezifische Karten und gemeinsame Korrekturen. Kostenfrei nutzbar.",
-      "category": "collaboration",
+      "category": "deck_platforms",
       "icon": "🤝",
       "addon_codes": ["1957538407"],
       "requires_account": true,
@@ -165,7 +165,7 @@
       "name": "Image Occlusion Enhanced",
       "subtitle": "Bildbasierte Lernkarten erstellen",
       "description": "Überdecke Teile eines Bildes und teste dich auf das Verdeckte. Unverzichtbar für Anatomie, Biochemie-Diagramme und alle visuellen Lerninhalte.",
-      "category": "others",
+      "category": "learning",
       "icon": "🖼️",
       "addon_codes": ["1374772155"],
       "requires_account": false,
@@ -178,7 +178,7 @@
       "name": "Review Heatmap",
       "subtitle": "Lernaktivität visualisieren",
       "description": "Zeigt eine GitHub-ähnliche Heatmap deiner täglichen Lernaktivität im Anki-Hauptfenster. Motivierend und hilfreich für die Lernplanung.",
-      "category": "others",
+      "category": "tools",
       "icon": "📊",
       "addon_codes": ["1771074083"],
       "requires_account": false,
@@ -191,7 +191,7 @@
       "name": "AnkiConnect",
       "subtitle": "API-Schnittstelle für externe Tools",
       "description": "Ermöglicht externen Programmen (Browser-Erweiterungen, Yomitan, eigene Skripte) die Kommunikation mit Anki. Wird von vielen anderen Tools vorausgesetzt.",
-      "category": "others",
+      "category": "tools",
       "icon": "🔌",
       "addon_codes": ["2055492159"],
       "requires_account": false,
@@ -207,20 +207,20 @@
   },
 
   "categories": {
-    "basics": {
-      "label": "📚  Basics",
-      "description": "Ankizin und AMBOSS",
-      "color": "#8e44ad"
-    },
-    "collaboration": {
-      "label": "🤝  Collaboration",
-      "description": "AnkiCollab und AnkiHub",
+    "deck_platforms": {
+      "label": "🤝  Deck-Plattformen",
+      "description": "Plattformen zum Abonnieren, Teilen und gemeinsamen Verbessern von Decks",
       "color": "#2980b9"
     },
-    "others": {
-      "label": "✨  Others",
-      "description": "Weitere Add-ons und Erweiterungen",
-      "color": "#f39c12"
+    "learning": {
+      "label": "🧠  Lernhilfen",
+      "description": "Erweiterungen, die das Lernen bereichern – Videos, Bildkarten und Referenzmaterial",
+      "color": "#27ae60"
+    },
+    "tools": {
+      "label": "🔧  Tools & Integration",
+      "description": "Hilfsprogramme für Statistiken, Workflow und externe Anbindungen",
+      "color": "#e67e22"
     }
   }
 }
