@@ -69,6 +69,18 @@ PAGE_DONE = 4
 PAGE_UPDATE = 5
 
 # ---------------------------------------------------------------------------
+# Dark mode detection
+# ---------------------------------------------------------------------------
+
+def _is_dark() -> bool:
+    try:
+        from aqt.theme import theme_manager
+        return bool(theme_manager.night_mode)
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Shared styles
 # ---------------------------------------------------------------------------
 _BTN_PRIMARY = (
@@ -78,13 +90,26 @@ _BTN_PRIMARY = (
     "QPushButton:hover{background:#3498db;}"
     "QPushButton:disabled{background:#95a5a6;}"
 )
-_BTN_SECONDARY = (
-    "QPushButton{"
-    " background:#ecf0f1;color:#2c3e50;padding:8px 22px;"
-    " border-radius:5px;font-size:12px;border:1px solid #bdc3c7;}"
-    "QPushButton:hover{background:#d5dbdb;}"
-    "QPushButton:disabled{color:#aab;}"
-)
+
+
+def _BTN_SECONDARY() -> str:
+    if _is_dark():
+        return (
+            "QPushButton{"
+            " background:#3a3d44;color:#d0d5dd;padding:8px 22px;"
+            " border-radius:5px;font-size:12px;border:1px solid #555a65;}"
+            "QPushButton:hover{background:#44474e;}"
+            "QPushButton:disabled{color:#666;}"
+        )
+    return (
+        "QPushButton{"
+        " background:#ecf0f1;color:#2c3e50;padding:8px 22px;"
+        " border-radius:5px;font-size:12px;border:1px solid #bdc3c7;}"
+        "QPushButton:hover{background:#d5dbdb;}"
+        "QPushButton:disabled{color:#aab;}"
+    )
+
+
 _BTN_GREEN = (
     "QPushButton{"
     " background:#27ae60;color:white;padding:7px 18px;"
@@ -115,12 +140,22 @@ _LOG_STYLE = (
     " font-family:monospace;font-size:12px;"
     " border:1px solid #45475a;border-radius:4px;}"
 )
-_STEPS_STYLE = (
-    "QTextBrowser{"
-    " background:#f8f9fa;color:#2c3e50;"
-    " font-size:13px;border:1px solid #dee2e6;border-radius:4px;"
-    " padding:8px;}"
-)
+
+
+def _STEPS_STYLE() -> str:
+    if _is_dark():
+        return (
+            "QTextBrowser{"
+            " background:#22252d;color:#d0d5dd;"
+            " font-size:13px;border:1px solid #3a3d44;border-radius:4px;"
+            " padding:8px;}"
+        )
+    return (
+        "QTextBrowser{"
+        " background:#f8f9fa;color:#2c3e50;"
+        " font-size:13px;border:1px solid #dee2e6;border-radius:4px;"
+        " padding:8px;}"
+    )
 
 
 
@@ -158,7 +193,7 @@ class _TownCard(QFrame):
         name_lbl.setStyleSheet("font-size:13px;")
         desc_lbl = QLabel(town_data.get("description", ""))
         desc_lbl.setWordWrap(True)
-        desc_lbl.setStyleSheet("color:#555;font-size:11px;")
+        desc_lbl.setStyleSheet("color:#9aa0aa;font-size:11px;" if _is_dark() else "color:#555;font-size:11px;")
         txt.addWidget(name_lbl)
         txt.addWidget(desc_lbl)
         row.addLayout(txt, stretch=1)
@@ -172,7 +207,19 @@ class _TownCard(QFrame):
         row.addWidget(self._check_lbl)
 
     def _apply_style(self) -> None:
-        if self._selected:
+        if _is_dark():
+            if self._selected:
+                self.setStyleSheet(
+                    "_TownCard{background:#1e2d3e;border:2px solid #2980b9;"
+                    "border-radius:8px;margin:2px 0;}"
+                )
+            else:
+                self.setStyleSheet(
+                    "_TownCard{background:#2a2d35;border:2px solid #444a55;"
+                    "border-radius:8px;margin:2px 0;}"
+                    "_TownCard:hover{border-color:#5ba3d4;}"
+                )
+        elif self._selected:
             self.setStyleSheet(
                 "_TownCard{background:#ebf5fb;border:2px solid #2980b9;"
                 "border-radius:8px;margin:2px 0;}"
@@ -240,11 +287,17 @@ class _AddonCard(QFrame):
 
         if read_only:
             self.setStyleSheet(
+                "_AddonCard{background:#1e2e24;border:1px solid #2e5a38;"
+                "border-radius:8px;margin:2px 0;}"
+                if _is_dark() else
                 "_AddonCard{background:#f0faf4;border:1px solid #a9dfbf;"
                 "border-radius:8px;margin:2px 0;}"
             )
         else:
             self.setStyleSheet(
+                "_AddonCard{background:#2a2d35;border:2px solid #444a55;border-radius:8px;margin:2px 0;}"
+                "_AddonCard:hover{border-color:#3498db;}"
+                if _is_dark() else
                 "_AddonCard{background:#fff;border:2px solid #dee2e6;border-radius:8px;margin:2px 0;}"
                 "_AddonCard:hover{border-color:#3498db;}"
             )
@@ -283,12 +336,14 @@ class _AddonCard(QFrame):
         name_lbl.setStyleSheet("font-size:13px;")
         name_row.addWidget(name_lbl)
 
+        _badge_installed = (
+            "background:#1e3a28;color:#5cc68a;padding:2px 7px;border-radius:9px;font-size:10px;"
+            if _is_dark() else
+            "background:#d5f5e3;color:#1e8449;padding:2px 7px;border-radius:9px;font-size:10px;"
+        )
         if read_only:
             b = QLabel(T["badge_installed"])
-            b.setStyleSheet(
-                "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
-                "border-radius:9px;font-size:10px;"
-            )
+            b.setStyleSheet(_badge_installed)
             name_row.addWidget(b)
         else:
             already = all(
@@ -297,17 +352,15 @@ class _AddonCard(QFrame):
             )
             if already:
                 b = QLabel(T["badge_installed"])
-                b.setStyleSheet(
-                    "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
-                    "border-radius:9px;font-size:10px;"
-                )
+                b.setStyleSheet(_badge_installed)
                 name_row.addWidget(b)
 
         if addon_data.get("requires_account"):
             b2 = QLabel(T["badge_account_needed"])
             b2.setStyleSheet(
-                "background:#fef9e7;color:#9a7d0a;padding:2px 7px;"
-                "border-radius:9px;font-size:10px;"
+                "background:#3a3020;color:#c9a84c;padding:2px 7px;border-radius:9px;font-size:10px;"
+                if _is_dark() else
+                "background:#fef9e7;color:#9a7d0a;padding:2px 7px;border-radius:9px;font-size:10px;"
             )
             name_row.addWidget(b2)
 
@@ -315,18 +368,16 @@ class _AddonCard(QFrame):
             login_note = addon_data.get("login", {}).get("note", "")
             b3 = QLabel(T["badge_external_login"])
             b3.setStyleSheet(
-                "background:#eaecee;color:#566573;padding:2px 7px;"
-                "border-radius:9px;font-size:10px;"
+                "background:#333a44;color:#8090a0;padding:2px 7px;border-radius:9px;font-size:10px;"
+                if _is_dark() else
+                "background:#eaecee;color:#566573;padding:2px 7px;border-radius:9px;font-size:10px;"
             )
             if login_note:
                 b3.setToolTip(login_note)
             name_row.addWidget(b3)
         elif login_type == "logged_in":
             b3 = QLabel(T["badge_logged_in"])
-            b3.setStyleSheet(
-                "background:#d5f5e3;color:#1e8449;padding:2px 7px;"
-                "border-radius:9px;font-size:10px;"
-            )
+            b3.setStyleSheet(_badge_installed)
             name_row.addWidget(b3)
 
         name_row.addStretch()
@@ -341,6 +392,10 @@ class _AddonCard(QFrame):
             except AttributeError:
                 link_lbl.setAttribute(Qt.WA_Hover, True)  # type: ignore[attr-defined]
             link_lbl.setStyleSheet(
+                "QLabel{background:#1e2d3e;color:#5ba3d4;border-radius:10px;"
+                "font-size:11px;font-weight:bold;}"
+                "QLabel:hover{background:#253d52;}"
+                if _is_dark() else
                 "QLabel{background:#d6eaf8;color:#2980b9;border-radius:10px;"
                 "font-size:11px;font-weight:bold;}"
                 "QLabel:hover{background:#aed6f1;}"
@@ -361,7 +416,11 @@ class _AddonCard(QFrame):
         subtitle_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
         desc_lbl = QLabel(addon_data["description"])
         desc_lbl.setWordWrap(True)
-        desc_lbl.setStyleSheet("color:#555;font-size:11px;margin-top:2px;")
+        desc_lbl.setStyleSheet(
+            "color:#9aa0aa;font-size:11px;margin-top:2px;"
+            if _is_dark() else
+            "color:#555;font-size:11px;margin-top:2px;"
+        )
         txt.addWidget(subtitle_lbl)
         txt.addWidget(desc_lbl)
         txt.addStretch()
@@ -560,6 +619,10 @@ class AnkiSetupWizard(QDialog):
         search.setPlaceholderText(T["uni_search_placeholder"])
         search.setStyleSheet(
             "QLineEdit{padding:6px 10px;font-size:13px;"
+            "border:2px solid #3a3d44;border-radius:6px;background:#22252d;color:#d0d5dd;}"
+            "QLineEdit:focus{border-color:#2980b9;}"
+            if _is_dark() else
+            "QLineEdit{padding:6px 10px;font-size:13px;"
             "border:2px solid #dee2e6;border-radius:6px;background:#fff;}"
             "QLineEdit:focus{border-color:#2980b9;}"
         )
@@ -611,6 +674,9 @@ class AnkiSetupWizard(QDialog):
 
         self._install_progress = QProgressBar()
         self._install_progress.setStyleSheet(
+            "QProgressBar{height:18px;border-radius:4px;border:1px solid #3a3d44;}"
+            "QProgressBar::chunk{background:#2980b9;border-radius:4px;}"
+            if _is_dark() else
             "QProgressBar{height:18px;border-radius:4px;border:1px solid #bdc3c7;}"
             "QProgressBar::chunk{background:#2980b9;border-radius:4px;}"
         )
@@ -647,10 +713,10 @@ class AnkiSetupWizard(QDialog):
 
         btn_row = QHBoxLayout()
         all_btn = QPushButton(T["select_btn_all"])
-        all_btn.setStyleSheet(_BTN_SECONDARY)
+        all_btn.setStyleSheet(_BTN_SECONDARY())
         all_btn.clicked.connect(lambda: [c.set_checked(True) for c in self._addon_cards])
         none_btn = QPushButton(T["select_btn_none"])
-        none_btn.setStyleSheet(_BTN_SECONDARY)
+        none_btn.setStyleSheet(_BTN_SECONDARY())
         none_btn.clicked.connect(lambda: [c.set_checked(False) for c in self._addon_cards])
         btn_row.addWidget(all_btn)
         btn_row.addWidget(none_btn)
@@ -670,6 +736,8 @@ class AnkiSetupWizard(QDialog):
         if basic_ids:
             section_lbl = QLabel(T["select_section_basics"])
             section_lbl.setStyleSheet(
+                "color:#5cc68a;font-weight:bold;font-size:12px;padding:6px 2px 2px 2px;"
+                if _is_dark() else
                 "color:#1e8449;font-weight:bold;font-size:12px;padding:6px 2px 2px 2px;"
             )
             layout.addWidget(section_lbl)
@@ -692,6 +760,8 @@ class AnkiSetupWizard(QDialog):
         if optional_ids:
             section_lbl2 = QLabel(T["select_section_optional"])
             section_lbl2.setStyleSheet(
+                "color:#5ba3d4;font-weight:bold;font-size:12px;padding:12px 2px 2px 2px;"
+                if _is_dark() else
                 "color:#2980b9;font-weight:bold;font-size:12px;padding:12px 2px 2px 2px;"
             )
             layout.addWidget(section_lbl2)
@@ -869,7 +939,7 @@ class AnkiSetupWizard(QDialog):
         vl.addWidget(self._steps_title_lbl)
 
         self._steps_desc = QTextBrowser()
-        self._steps_desc.setStyleSheet(_STEPS_STYLE)
+        self._steps_desc.setStyleSheet(_STEPS_STYLE())
         vl.addWidget(self._steps_desc, stretch=1)
 
         self._steps_url_btn = QPushButton(T["steps_url_btn_default"])
@@ -897,13 +967,17 @@ class AnkiSetupWizard(QDialog):
         self._done_summary_lbl = QLabel()
         self._done_summary_lbl.setWordWrap(True)
         self._done_summary_lbl.setAlignment(_ALIGN_CENTER)
-        self._done_summary_lbl.setStyleSheet("font-size:13px;color:#555;")
+        self._done_summary_lbl.setStyleSheet(
+            "font-size:13px;color:#9aa0aa;" if _is_dark() else "font-size:13px;color:#555;"
+        )
         vl.addWidget(self._done_summary_lbl)
 
         restart_note = QLabel(T["done_restart_note"])
         restart_note.setWordWrap(True)
         restart_note.setAlignment(_ALIGN_CENTER)
-        restart_note.setStyleSheet("color:#856404;font-size:11px;")
+        restart_note.setStyleSheet(
+            "color:#e6c060;font-size:11px;" if _is_dark() else "color:#856404;font-size:11px;"
+        )
         vl.addWidget(restart_note)
 
         restart_btn = QPushButton(T["done_restart_btn"])
@@ -953,12 +1027,16 @@ class AnkiSetupWizard(QDialog):
 
     def _build_nav_bar(self, parent: QVBoxLayout) -> None:
         bar = QFrame()
-        bar.setStyleSheet("QFrame{background:#f4f6f7;border-top:1px solid #d5d8dc;}")
+        bar.setStyleSheet(
+            "QFrame{background:#22252d;border-top:1px solid #3a3d44;}"
+            if _is_dark() else
+            "QFrame{background:#f4f6f7;border-top:1px solid #d5d8dc;}"
+        )
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(20, 8, 20, 8)
 
         self._btn_back = QPushButton(T["nav_back"])
-        self._btn_back.setStyleSheet(_BTN_SECONDARY)
+        self._btn_back.setStyleSheet(_BTN_SECONDARY())
         self._btn_back.clicked.connect(self._on_back)
         hl.addWidget(self._btn_back)
         hl.addStretch()
@@ -969,7 +1047,7 @@ class AnkiSetupWizard(QDialog):
         hl.addWidget(self._steps_login_status)
 
         self._btn_skip = QPushButton(T["nav_skip"])
-        self._btn_skip.setStyleSheet(_BTN_SECONDARY)
+        self._btn_skip.setStyleSheet(_BTN_SECONDARY())
         self._btn_skip.clicked.connect(self._on_next)
         self._btn_skip.hide()
         hl.addWidget(self._btn_skip)
