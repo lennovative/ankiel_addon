@@ -131,7 +131,11 @@
         "login_module": "1957538407.dialogs",
         "login_dialog_class": "LoginDialog",
         "auth_module": "1957538407.auth_manager",
-        "is_logged_in_attr": "auth_manager.is_logged_in"
+        "is_logged_in_attr": "auth_manager.is_logged_in",
+        "post_login_hook": {
+          "module": "1957538407.menu",
+          "function": "update_ui_for_login_state"
+        }
       },
       "setup_steps": [
         {

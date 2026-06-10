@@ -824,6 +824,21 @@ class AnkiSetupWizard(QDialog):
             self._uninstall_addon(_aid)
         return _cb
 
+    def _call_post_login_hook(self, login_config: dict) -> None:
+        import sys
+        hook = login_config.get("post_login_hook", {})
+        if not hook:
+            return
+        mod = sys.modules.get(hook.get("module", ""))
+        if not mod:
+            return
+        func = getattr(mod, hook.get("function", ""), None)
+        if callable(func):
+            try:
+                func()
+            except Exception:
+                pass
+
     def _check_is_logged_in(self, auth_module: str, attr_path: str) -> bool:
         """Check login state via the addon's own auth_manager (requires addon to be loaded)."""
         import sys
@@ -883,6 +898,8 @@ class AnkiSetupWizard(QDialog):
             getattr(target, method_name)()
         else:
             target(mw).exec()
+        if self._check_is_logged_in(login.get("auth_module", ""), login.get("is_logged_in_attr", "")):
+            self._call_post_login_hook(login)
         self._back_to_overview()
 
     def _open_login_page(self, addon_id: str) -> None:
@@ -1529,6 +1546,9 @@ class AnkiSetupWizard(QDialog):
             self._update_nav()
             self._steps_login_status.setText(T["msg_logged_in"])
             self._steps_login_status.setStyleSheet("color:#27ae60;font-size:12px;padding:2px 0;")
+            addon_id, _ = self._step_queue[self._step_idx]
+            addon = ADDON_CATALOG.get(addon_id, {})
+            self._call_post_login_hook(addon.get("login", {}))
         else:
             self._steps_login_status.setText(T["msg_not_logged_in"])
             self._steps_login_status.setStyleSheet("color:#7f8c8d;font-size:12px;padding:2px 0;")
