@@ -62,7 +62,10 @@ STRINGS = {
 
     # Update page
     "update_check_btn": "🔍 Auf Updates prüfen",
-    "update_installed_date": "Installiert am: {date}",
+    "update_installed_date": "Version vom: {date}",
+    "update_last_checked": "Zuletzt geprüft: {date}",
+    "update_never_checked": "Noch nicht geprüft",
+    "update_installed_by_ankiel": "Aktuelle Version installiert am: {date}",
     "update_checking": "⏳  Prüfe auf Updates…",
     "update_log_updated": "✅  Update installiert  (Stand: {date})",
     "update_log_current": "✅  Bereits auf dem neuesten Stand",

@@ -69,6 +69,8 @@ PAGE_STEPS = 3
 PAGE_DONE = 4
 PAGE_UPDATE = 5
 
+_UPDATE_CACHE_PATH = os.path.join(os.path.dirname(__file__), "update_check_cache.json")
+
 # ---------------------------------------------------------------------------
 # Dark mode detection
 # ---------------------------------------------------------------------------
@@ -1054,6 +1056,14 @@ class AnkiSetupWizard(QDialog):
         self._update_version_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
         vl.addWidget(self._update_version_lbl)
 
+        self._update_last_checked_lbl = QLabel()
+        self._update_last_checked_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
+        vl.addWidget(self._update_last_checked_lbl)
+
+        self._update_install_date_lbl = QLabel()
+        self._update_install_date_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;")
+        vl.addWidget(self._update_install_date_lbl)
+
         self._update_check_btn = QPushButton(T["update_check_btn"])
         self._update_check_btn.setStyleSheet(_BTN_PRIMARY)
         self._update_check_btn.setFixedWidth(220)
@@ -1223,6 +1233,31 @@ class AnkiSetupWizard(QDialog):
     # Update-check page
     # -----------------------------------------------------------------------
 
+    def _load_update_cache(self) -> dict:
+        try:
+            with open(_UPDATE_CACHE_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return {}
+
+    def _save_update_check(self, addon_id: str) -> None:
+        cache = self._load_update_cache()
+        cache[addon_id] = int(datetime.datetime.now().timestamp())
+        try:
+            with open(_UPDATE_CACHE_PATH, "w", encoding="utf-8") as f:
+                json.dump(cache, f)
+        except OSError:
+            pass
+
+    def _save_install_date(self, addon_id: str) -> None:
+        cache = self._load_update_cache()
+        cache[addon_id + "_installed"] = int(datetime.datetime.now().timestamp())
+        try:
+            with open(_UPDATE_CACHE_PATH, "w", encoding="utf-8") as f:
+                json.dump(cache, f)
+        except OSError:
+            pass
+
     def _open_update_page(self, addon_id: str) -> None:
         """Show the update-check page before running setup steps."""
         self._update_addon_id = addon_id
@@ -1246,6 +1281,24 @@ class AnkiSetupWizard(QDialog):
                 pass
 
         self._update_version_lbl.setText(version_text)
+
+        # Load last-checked time from cache
+        cache = self._load_update_cache()
+        last_ts = cache.get(addon_id)
+        if last_ts:
+            dt_check = datetime.datetime.fromtimestamp(last_ts).strftime("%d.%m.%Y %H:%M")
+            checked_text = T["update_last_checked"].format(date=dt_check)
+        else:
+            checked_text = T["update_never_checked"]
+        self._update_last_checked_lbl.setText(checked_text)
+
+        install_ts = cache.get(addon_id + "_installed")
+        if install_ts:
+            dt_inst = datetime.datetime.fromtimestamp(install_ts).strftime("%d.%m.%Y %H:%M")
+            self._update_install_date_lbl.setText(T["update_installed_by_ankiel"].format(date=dt_inst))
+        else:
+            self._update_install_date_lbl.setText("")
+
         self._update_log.clear()
         self._update_check_btn.setEnabled(True)
         self._is_standalone_nav = True
@@ -1307,6 +1360,17 @@ class AnkiSetupWizard(QDialog):
 
         if any_updated:
             self._update_log.append(T["update_log_restart"])
+
+        # Record the check time
+        self._save_update_check(self._update_addon_id)
+        now_str = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
+        self._update_last_checked_lbl.setText(T["update_last_checked"].format(date=now_str))
+
+        if any_updated:
+            self._save_install_date(self._update_addon_id)
+            self._update_install_date_lbl.setText(
+                T["update_installed_by_ankiel"].format(date=now_str)
+            )
 
     # -----------------------------------------------------------------------
     # Installation – phase 1: basics (automatic after town selection)
@@ -1386,6 +1450,8 @@ class AnkiSetupWizard(QDialog):
                 if addon_id:
                     self._install_results[addon_id] = True
                     self._newly_installed_ids.append(addon_id)
+                    self._save_install_date(addon_id)
+                    self._save_update_check(addon_id)
             else:
                 errmsg = (
                     getattr(result, "errmsg", None)
