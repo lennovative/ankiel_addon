@@ -7,8 +7,24 @@ STRINGS = {
     # Uni page
     "uni_heading": "Hochschule auswählen",
     "uni_subheading": "Wähle deine Uni oder deinen Standort",
-    "uni_hint": "Add-ons für deinen Standort werden automatisch installiert.",
+    "uni_hint": "Im nächsten Schritt siehst du, welche Add-ons für deinen Standort installiert werden.",
     "uni_search_placeholder": "🔍  Suchen…",
+
+    # Confirm page (shown before the basic add-ons are installed)
+    "confirm_heading": "Basis-Add-ons installieren?",
+    "confirm_subheading": "Erst nach deiner Bestätigung wird etwas heruntergeladen",
+    "confirm_intro": (
+        "Für <b>{town}</b> sind diese Add-ons als Grundausstattung vorgesehen. "
+        "Bereits installierte Add-ons werden übersprungen."
+    ),
+    "confirm_next_steps": (
+        "<b>So geht es weiter:</b><br>"
+        "1. Mit „Installieren“ werden die Add-ons heruntergeladen "
+        "(von AnkiWeb bzw. direkt vom Anbieter) und in Anki installiert.<br>"
+        "2. Danach startest du Anki neu, damit die Add-ons aktiv werden.<br>"
+        "3. Nach dem Neustart öffnet sich der Assistent wieder: Dort meldest du dich "
+        "bei Bedarf an und kannst weitere Add-ons auswählen."
+    ),
 
     # Install step template (generated dynamically, not stored in addons.json)
     "step_install_title": "{name} installieren",
@@ -32,7 +48,7 @@ STRINGS = {
     "select_subheading": "Add-ons verwalten, anmelden & weitere installieren",
     "select_btn_all": "Alle auswählen",
     "select_btn_none": "Keine",
-    "select_section_basics": "✅  Basics – automatisch installiert",
+    "select_section_basics": "✅  Basics – Grundausstattung für deinen Standort",
     "select_section_optional": "➕  Weitere Add-ons (optional)",
 
     # Addon card — badges
@@ -73,6 +89,14 @@ STRINGS = {
     "update_log_downloaded": "✅  Download abgeschlossen",
     "update_log_error": "❌  Fehler: {errmsg}",
     "update_log_restart": "⚠️  Starte Anki neu, damit das Update aktiv wird.",
+    "update_log_delegated": (
+        "🔄  {name} prüft jetzt selbst auf Updates. "
+        "Ist eine neue Version verfügbar, öffnet sich ein Fenster von {name}."
+    ),
+    "update_log_hook_login": (
+        "ℹ️  Melde dich bei {name} an, damit {name} selbst nach der neuesten Version suchen kann "
+        "– bis dahin nutzt AnKiel die eigene Update-Prüfung."
+    ),
     "update_hint": "💡 Nach einer Aktualisierung muss Anki neu gestartet werden, damit das Update aktiv wird.",
 
     # Nav bar — button labels

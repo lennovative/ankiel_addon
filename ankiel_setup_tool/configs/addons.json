@@ -55,7 +55,15 @@
       "description": "Hover über Fachbegriffe in deinen Karten und erhalte sofort Erklärungen aus der AMBOSS-Bibliothek. Erfordert einen AMBOSS-Account (kostenpflichtig oder Unizugang).",
       "category": "learning",
       "icon": "📚",
-      "addon_codes": ["1044112126"],
+      "addon_codes": ["0amboss_addon"],
+      "download_url": "https://integrations-cdn.amboss.com/amboss-de-v0.11.2.ankiaddon",
+      "replaces": ["1044112126"],
+      "update_hook": {
+        "module": "0amboss_addon.addon",
+        "function": "update_notification_service.start",
+        "kwargs": {"interactive": true},
+        "requires_login": true
+      },
       "requires_account": true,
       "external_url": "https://www.amboss.com",
       "login": {
@@ -64,10 +72,10 @@
         "skip_if_logged_in": true,
         "button_label": "AMBOSS Website",
         "button_url": "https://www.amboss.com",
-        "login_module": "1044112126.addon",
+        "login_module": "0amboss_addon.addon",
         "login_dialog_class": "auth_dialog",
         "login_method": "show_login",
-        "auth_module": "1044112126.addon",
+        "auth_module": "0amboss_addon.addon",
         "is_logged_in_attr": "user_service.is_logged_in"
       },
       "setup_steps": []

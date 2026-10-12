@@ -8,6 +8,7 @@ Pages (QStackedWidget indices):
   3  Steps   – guided setup instructions per add-on
   4  Done    – summary + restart reminder
   5  Update  – update-check page shown before re-running setup steps
+  6  Confirm – lists the basic add-ons and asks before installing them
 """
 
 from __future__ import annotations
@@ -43,7 +44,7 @@ from aqt.utils import tooltip
 
 from .addon_defs import ADDON_CATALOG, CATEGORIES
 from .config_loader import list_towns, load_state, save_state
-from .installer import is_addon_disabled, is_addon_installed
+from .installer import install_from_url, installed_mod, is_addon_disabled, is_addon_installed
 from .locales import T
 
 # ---------------------------------------------------------------------------
@@ -68,6 +69,7 @@ PAGE_SELECT = 2
 PAGE_STEPS = 3
 PAGE_DONE = 4
 PAGE_UPDATE = 5
+PAGE_CONFIRM = 6
 
 _UPDATE_CACHE_PATH = os.path.join(os.path.dirname(__file__), "update_check_cache.json")
 
@@ -264,7 +266,7 @@ class _TownCard(QFrame):
 class _AddonCard(QFrame):
     """Clickable card for one add-on.
 
-    read_only=True : already-installed card (no checkbox, not selectable).
+    read_only=True : no checkbox, not selectable (green when installed).
     on_check_changed : called when the checkbox state changes.
     on_setup         : if provided, a 'Setup →' button is shown.
     on_uninstall     : if provided, a red 'Deinstallieren' button is shown.
@@ -289,7 +291,17 @@ class _AddonCard(QFrame):
         self._read_only = read_only
         self.setFrameShape(_FRAME_STYLED)
 
-        if read_only:
+        already = all(
+            is_addon_installed(str(c), addons_folder)
+            for c in addon_data.get("addon_codes", [])
+        )
+        neutral_style = (
+            "_AddonCard{background:#2a2d35;border:2px solid #444a55;border-radius:8px;margin:2px 0;}"
+            if _is_dark() else
+            "_AddonCard{background:#fff;border:2px solid #dee2e6;border-radius:8px;margin:2px 0;}"
+        )
+
+        if read_only and already:
             self.setStyleSheet(
                 "_AddonCard{background:#1e2e24;border:1px solid #2e5a38;"
                 "border-radius:8px;margin:2px 0;}"
@@ -297,14 +309,10 @@ class _AddonCard(QFrame):
                 "_AddonCard{background:#f0faf4;border:1px solid #a9dfbf;"
                 "border-radius:8px;margin:2px 0;}"
             )
+        elif read_only:
+            self.setStyleSheet(neutral_style)
         else:
-            self.setStyleSheet(
-                "_AddonCard{background:#2a2d35;border:2px solid #444a55;border-radius:8px;margin:2px 0;}"
-                "_AddonCard:hover{border-color:#3498db;}"
-                if _is_dark() else
-                "_AddonCard{background:#fff;border:2px solid #dee2e6;border-radius:8px;margin:2px 0;}"
-                "_AddonCard:hover{border-color:#3498db;}"
-            )
+            self.setStyleSheet(neutral_style + "_AddonCard:hover{border-color:#3498db;}")
             try:
                 self.setCursor(Qt.CursorShape.PointingHandCursor)
             except AttributeError:
@@ -345,19 +353,10 @@ class _AddonCard(QFrame):
             if _is_dark() else
             "background:#d5f5e3;color:#1e8449;padding:2px 7px;border-radius:9px;font-size:10px;"
         )
-        if read_only:
+        if already:
             b = QLabel(T["badge_installed"])
             b.setStyleSheet(_badge_installed)
             name_row.addWidget(b)
-        else:
-            already = all(
-                is_addon_installed(str(c), addons_folder)
-                for c in addon_data.get("addon_codes", [])
-            )
-            if already:
-                b = QLabel(T["badge_installed"])
-                b.setStyleSheet(_badge_installed)
-                name_row.addWidget(b)
 
         if addon_data.get("requires_account"):
             b2 = QLabel(T["badge_account_needed"])
@@ -532,7 +531,7 @@ class AnkiSetupWizard(QDialog):
         self._newly_installed_ids: List[str] = []
         self._selected_ids: List[str] = []
         self._install_results: Dict[str, bool] = {}
-        self._code_to_addon: Dict[int, str] = {}
+        self._code_to_addon: Dict[str, str] = {}
 
         # Overview cards
         self._addon_cards: List[_AddonCard] = []
@@ -565,6 +564,7 @@ class AnkiSetupWizard(QDialog):
         self._stack.addWidget(self._build_steps_page())   # 3  PAGE_STEPS
         self._stack.addWidget(self._build_done_page())    # 4  PAGE_DONE
         self._stack.addWidget(self._build_update_page())  # 5  PAGE_UPDATE
+        self._stack.addWidget(self._build_confirm_page()) # 6  PAGE_CONFIRM
 
         self._build_nav_bar(outer)
         self._go_to(PAGE_UNI)
@@ -682,6 +682,47 @@ class AnkiSetupWizard(QDialog):
         for card in self._town_cards:
             card.set_selected(card.town_id() == town_id)
         save_state({"selected_town": town_id})
+
+    def _build_confirm_page(self) -> QWidget:
+        page = QWidget()
+        vl = QVBoxLayout(page)
+        vl.setContentsMargins(18, 12, 18, 8)
+        vl.setSpacing(6)
+
+        top = QLabel(
+            f"<b style='font-size:14px;'>{T['confirm_heading']}</b>"
+            f"  <span style='color:#7f8c8d;font-size:11px;'>– {T['confirm_subheading']}</span>"
+        )
+        vl.addWidget(top)
+
+        self._confirm_intro_lbl = QLabel()
+        self._confirm_intro_lbl.setWordWrap(True)
+        self._confirm_intro_lbl.setStyleSheet("color:#7f8c8d;font-size:11px;padding-bottom:2px;")
+        vl.addWidget(self._confirm_intro_lbl)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(_FRAME_NONE)
+
+        inner = QWidget()
+        self._confirm_list_layout = QVBoxLayout(inner)
+        self._confirm_list_layout.setContentsMargins(2, 2, 2, 2)
+        self._confirm_list_layout.setSpacing(3)
+
+        scroll.setWidget(inner)
+        vl.addWidget(scroll, stretch=1)
+
+        next_steps = QLabel(T["confirm_next_steps"])
+        next_steps.setWordWrap(True)
+        next_steps.setStyleSheet(
+            "QLabel{background:#22252d;color:#d0d5dd;border:1px solid #3a3d44;"
+            "border-radius:6px;padding:10px 12px;font-size:12px;}"
+            if _is_dark() else
+            "QLabel{background:#f8f9fa;color:#2c3e50;border:1px solid #dee2e6;"
+            "border-radius:6px;padding:10px 12px;font-size:12px;}"
+        )
+        vl.addWidget(next_steps)
+        return page
 
     def _build_install_page(self) -> QWidget:
         page = QWidget()
@@ -851,36 +892,43 @@ class AnkiSetupWizard(QDialog):
             self._uninstall_addon(_aid)
         return _cb
 
-    def _call_post_login_hook(self, login_config: dict) -> None:
+    @staticmethod
+    def _resolve_addon_attr(module: str, attr_path: str) -> Any:
+        """Resolve a dotted attribute path on a loaded add-on module (None if unavailable)."""
         import sys
-        hook = login_config.get("post_login_hook", {})
+        if not module or not attr_path:
+            return None
+        obj: Any = sys.modules.get(module)
+        for attr in attr_path.split("."):
+            if obj is None:
+                return None
+            obj = getattr(obj, attr, None)
+        return obj
+
+    def _addon_hook(self, hook: Optional[dict]):
+        """Return a no-arg callable for hook = {module, function (dotted path), kwargs},
+        or None if no hook is defined or the add-on isn't loaded."""
         if not hook:
-            return
-        mod = sys.modules.get(hook.get("module", ""))
-        if not mod:
-            return
-        func = getattr(mod, hook.get("function", ""), None)
-        if callable(func):
+            return None
+        func = self._resolve_addon_attr(hook.get("module", ""), hook.get("function", ""))
+        if not callable(func):
+            return None
+        kwargs = hook.get("kwargs", {})
+        return lambda: func(**kwargs)
+
+    def _call_post_login_hook(self, login_config: dict) -> None:
+        hook = self._addon_hook(login_config.get("post_login_hook"))
+        if hook:
             try:
-                func()
+                hook()
             except Exception:
                 pass
 
     def _check_is_logged_in(self, auth_module: str, attr_path: str) -> bool:
         """Check login state via the addon's own auth_manager (requires addon to be loaded)."""
-        import sys
-        if not auth_module or not attr_path:
-            return False
-        mod = sys.modules.get(auth_module)
-        if not mod:
-            return False
-        obj: Any = mod
-        for attr in attr_path.split("."):
-            obj = getattr(obj, attr, None)
-            if obj is None:
-                return False
+        func = self._resolve_addon_attr(auth_module, attr_path)
         try:
-            return bool(obj())
+            return callable(func) and bool(func())
         except Exception:
             return False
 
@@ -1112,7 +1160,7 @@ class AnkiSetupWizard(QDialog):
 
     def _go_to(self, page: int) -> None:
         current = self._stack.currentIndex()
-        if page != current and current not in (PAGE_INSTALL, PAGE_DONE):
+        if page != current and current not in (PAGE_INSTALL, PAGE_DONE, PAGE_CONFIRM):
             self._last_page = current
         self._stack.setCurrentIndex(page)
         self._update_nav()
@@ -1120,8 +1168,8 @@ class AnkiSetupWizard(QDialog):
     def _update_nav(self) -> None:
         page = self._stack.currentIndex()
 
-        self._btn_back.setVisible(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
-        self._btn_back.setEnabled(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS))
+        self._btn_back.setVisible(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS, PAGE_CONFIRM))
+        self._btn_back.setEnabled(page in (PAGE_SELECT, PAGE_UPDATE, PAGE_STEPS, PAGE_CONFIRM))
 
         # Login-step mode: show Anmelden + Überspringen, hide Nächster Schritt
         login_pending = (
@@ -1155,6 +1203,9 @@ class AnkiSetupWizard(QDialog):
             self._btn_next.setEnabled(False)
         elif page == PAGE_UPDATE:
             self._btn_next.setText(T["nav_overview"])
+            self._btn_next.setEnabled(True)
+        elif page == PAGE_CONFIRM:
+            self._btn_next.setText(T["nav_install"])
             self._btn_next.setEnabled(True)
         else:  # PAGE_UNI
             self._btn_next.setText(T["nav_next"])
@@ -1194,6 +1245,8 @@ class AnkiSetupWizard(QDialog):
             if not self._selected_town_id:
                 tooltip(T["msg_select_uni"])
                 return
+            self._confirm_basic_install()
+        elif page == PAGE_CONFIRM:
             self._start_basic_install()
         elif page == PAGE_SELECT:
             ids = [c.addon_id() for c in self._addon_cards if c.is_checked()]
@@ -1288,6 +1341,18 @@ class AnkiSetupWizard(QDialog):
 
     def _check_for_updates(self) -> None:
         addon = ADDON_CATALOG.get(self._update_addon_id, {})
+
+        self._update_log.clear()
+        self._update_log.append(T["update_checking"])
+        self._update_check_btn.setEnabled(False)
+
+        if self._delegate_update_check(addon):
+            return
+
+        if addon.get("download_url"):
+            self._check_for_url_update(addon)
+            return
+
         codes = [int(c) for c in addon.get("addon_codes", [])]
 
         self._update_mod_before = {}
@@ -1298,10 +1363,6 @@ class AnkiSetupWizard(QDialog):
                     self._update_mod_before[str(code)] = json.load(f).get("mod", 0)
             except (FileNotFoundError, json.JSONDecodeError, OSError):
                 self._update_mod_before[str(code)] = 0
-
-        self._update_log.clear()
-        self._update_log.append(T["update_checking"])
-        self._update_check_btn.setEnabled(False)
 
         def fetch() -> list:
             return fetch_update_info(list(codes))
@@ -1338,6 +1399,49 @@ class AnkiSetupWizard(QDialog):
                 self._finish_update_check(any_updated=False)
 
         mw.taskman.run_in_background(fetch, on_info_received)
+
+    def _delegate_update_check(self, addon: dict) -> bool:
+        """Hand the check to the add-on's own updater ('update_hook' in addons.json).
+
+        Returns False, so the built-in check runs instead, if no hook is defined,
+        the add-on isn't loaded yet, or the hook needs a login that is missing.
+        """
+        hook_cfg = addon.get("update_hook") or {}
+        hook = self._addon_hook(hook_cfg)
+        if not hook:
+            return False
+        name = addon.get("name", "")
+        login = addon.get("login", {})
+        if hook_cfg.get("requires_login") and not self._check_is_logged_in(
+            login.get("auth_module", ""), login.get("is_logged_in_attr", "")
+        ):
+            self._update_log.append(T["update_log_hook_login"].format(name=name))
+            return False
+        try:
+            hook()
+        except Exception:
+            return False
+        self._update_log.append(T["update_log_delegated"].format(name=name))
+        self._finish_update_check(any_updated=False)
+        return True
+
+    def _check_for_url_update(self, addon: dict) -> None:
+        """Update check for add-ons installed from a direct download_url instead of AnkiWeb."""
+        code = str(addon["addon_codes"][0])
+        local_mod = installed_mod(code, self._addons_folder)
+
+        def on_done(future) -> None:
+            result = future.result()
+            if result is None:
+                date = datetime.datetime.fromtimestamp(local_mod).strftime("%d.%m.%Y") if local_mod else "?"
+                self._update_log.append(T["update_log_current"].format(date=date))
+                self._finish_update_check(any_updated=False)
+            else:
+                self._on_update_download_done([(code, result)])
+
+        mw.taskman.run_in_background(
+            lambda: install_from_url(mw.addonManager, addon, min_mod=local_mod), on_done
+        )
 
     def _on_update_download_done(self, log: list) -> None:
         any_updated = False
@@ -1379,8 +1483,40 @@ class AnkiSetupWizard(QDialog):
             )
 
     # -----------------------------------------------------------------------
-    # Installation – phase 1: basics (automatic after town selection)
+    # Installation – phase 1: basics (after town selection + confirmation)
     # -----------------------------------------------------------------------
+
+    def _confirm_basic_install(self) -> None:
+        """List the town's basic add-ons and wait for the user to confirm the install."""
+        from .config_loader import load_town
+        self._town_config = load_town(self._selected_town_id or "")
+        basic_ids = [aid for aid in self._town_config.get("basic_addons", []) if aid in ADDON_CATALOG]
+
+        missing = [
+            aid for aid in basic_ids
+            if not all(
+                is_addon_installed(str(c), self._addons_folder)
+                for c in ADDON_CATALOG[aid].get("addon_codes", [])
+            )
+        ]
+        if not missing:
+            # Nothing would be downloaded, so there is nothing to confirm.
+            self._start_basic_install()
+            return
+
+        layout = self._confirm_list_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        for aid in basic_ids:
+            layout.addWidget(_AddonCard(ADDON_CATALOG[aid], self._addons_folder, read_only=True))
+        layout.addStretch()
+
+        self._confirm_intro_lbl.setText(
+            T["confirm_intro"].format(town=self._town_config.get("name", ""))
+        )
+        self._go_to(PAGE_CONFIRM)
 
     def _start_basic_install(self) -> None:
         from .config_loader import load_town
@@ -1404,6 +1540,7 @@ class AnkiSetupWizard(QDialog):
         self._newly_installed_ids = []
 
         codes_to_download: List[int] = []
+        url_addon_ids: List[str] = []
 
         for addon_id in self._selected_ids:
             addon = ADDON_CATALOG.get(addon_id, {})
@@ -1411,17 +1548,20 @@ class AnkiSetupWizard(QDialog):
             icon = addon.get("icon", "📦")
             needs_dl = False
             for code in addon.get("addon_codes", []):
-                self._code_to_addon[int(code)] = addon_id
+                self._code_to_addon[str(code)] = addon_id
                 if not is_addon_installed(str(code), self._addons_folder):
-                    codes_to_download.append(int(code))
+                    if not addon.get("download_url"):
+                        codes_to_download.append(int(code))
                     needs_dl = True
+            if needs_dl and addon.get("download_url"):
+                url_addon_ids.append(addon_id)
             if needs_dl:
                 self._install_log.append(T["install_log_downloading"].format(icon=icon, name=name))
             else:
                 self._install_log.append(T["install_log_already"].format(icon=icon, name=name))
                 self._install_results[addon_id] = True
 
-        total = len(codes_to_download)
+        total = len(codes_to_download) + len(url_addon_ids)
         if total:
             # Indeterminate (pulsing) bar — download_addons gives no per-addon
             # callback so we can't track real progress.
@@ -1430,12 +1570,31 @@ class AnkiSetupWizard(QDialog):
             self._install_status_lbl.setText(
                 f"<b>{T['install_status_downloading'].format(count=total)}</b>"
             )
-            download_addons(
-                parent=self,
-                mgr=mw.addonManager,
-                ids=codes_to_download,
-                on_done=self._on_downloads_done,
-            )
+
+            def download_from_ankiweb(url_log: list) -> None:
+                if not codes_to_download:
+                    self._on_downloads_done(url_log)
+                    return
+                download_addons(
+                    parent=self,
+                    mgr=mw.addonManager,
+                    ids=codes_to_download,
+                    on_done=lambda log: self._on_downloads_done(url_log + log),
+                )
+
+            if url_addon_ids:
+                # Direct-URL add-ons first, then AnkiWeb; results share one log.
+                def install_urls() -> list:
+                    return [
+                        (ADDON_CATALOG[aid]["addon_codes"][0],
+                         install_from_url(mw.addonManager, ADDON_CATALOG[aid]))
+                        for aid in url_addon_ids
+                    ]
+                mw.taskman.run_in_background(
+                    install_urls, lambda fut: download_from_ankiweb(fut.result())
+                )
+            else:
+                download_from_ankiweb([])
         else:
             self._install_progress.setMaximum(1)
             self._install_progress.setValue(1)
@@ -1446,7 +1605,7 @@ class AnkiSetupWizard(QDialog):
         self._install_progress.setMaximum(1)
         self._install_progress.setValue(1)
         for entry_id, result in log:
-            addon_id = self._code_to_addon.get(entry_id)
+            addon_id = self._code_to_addon.get(str(entry_id))
             addon = ADDON_CATALOG.get(addon_id or "", {})
             name = addon.get("name", str(entry_id))
             icon = addon.get("icon", "📦")

@@ -8,7 +8,7 @@ Einrichtungsassistent für Anki, entwickelt fürs Medizinstudium an deutschen Un
 
 ## Funktionen
 
-- Wähle deine Universität – die passenden Add-ons werden automatisch installiert
+- Wähle deine Universität – die passenden Add-ons werden nach deiner Bestätigung installiert
 - Schritt-für-Schritt-Anleitung für jedes Add-on, inklusive Account-Anmeldung
 - Übersicht aller Add-ons: Updates prüfen, Anleitungen erneut öffnen, deinstallieren
 
@@ -44,7 +44,7 @@ Setup wizard for Anki, built for medical students at German universities. After 
 
 ## Features
 
-- Select your university – the matching add-ons are installed automatically
+- Select your university – the matching add-ons are installed once you confirm
 - Step-by-step instructions for each add-on, including account login where needed
 - Overview of all add-ons: check for updates, reopen setup guides, uninstall
 
@@ -99,7 +99,7 @@ Create `ankiel_setup_tool/configs/<id>.json`:
 }
 ```
 
-The file is picked up automatically. `basic_addons` are installed after the university is selected; `optional_addons` are offered on the overview page.
+The file is picked up automatically. `basic_addons` are listed for confirmation after the university is selected and installed once the user agrees; `optional_addons` are offered on the overview page.
 
 ---
 
@@ -161,6 +161,29 @@ Optionally add a `"post_login_hook"` inside the `"login"` block to trigger a UI 
 "post_login_hook": {
   "module": "1234567890.menu",
   "function": "update_ui_for_login_state"
+}
+```
+
+Hooks call `function` in the add-on's already loaded `module`. `function` may be a dotted path to a method (e.g. `"some_service.start"`), and an optional `"kwargs"` object is passed as keyword arguments.
+
+**If the newest version is not on AnkiWeb** (e.g. AMBOSS), add a `"download_url"` pointing to the `.ankiaddon` file. `addon_codes` then holds the package (folder) name from that file's `manifest.json`, and `"replaces"` lists older installs (e.g. the AnkiWeb code) that are removed after a successful install, keeping their config. The update check compares that file with the installed version and never downgrades an add-on that updated itself:
+
+```json
+"addon_codes": ["0amboss_addon"],
+"download_url": "https://integrations-cdn.amboss.com/amboss-de-v0.11.2.ankiaddon",
+"replaces": ["1044112126"]
+```
+
+`download_url` then only decides the version for new installs; bumping it is optional if the add-on updates itself.
+
+**If the add-on has its own updater**, add an `"update_hook"` so "Auf Updates prüfen" hands the check to it instead of using AnkiWeb or `download_url`. With `"requires_login": true` this only happens while the user is logged in (checked via the `"login"` block); otherwise, and whenever the add-on isn't loaded yet, the built-in check runs:
+
+```json
+"update_hook": {
+  "module": "0amboss_addon.addon",
+  "function": "update_notification_service.start",
+  "kwargs": {"interactive": true},
+  "requires_login": true
 }
 ```
 
